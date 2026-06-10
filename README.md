@@ -48,10 +48,19 @@ speakeronnx embed clip.wav --model wespeaker-ecapa512
 
 | Alias | HF repo | License | Embed dim | Description |
 |---|---|---|---|---|
-| `wespeaker-resnet34` | [Wespeaker/wespeaker-voxceleb-resnet34-LM](https://huggingface.co/Wespeaker/wespeaker-voxceleb-resnet34-LM) | cc-by-4.0 | 256 | ResNet34 r-vector, VoxCeleb2 Dev |
+| `wespeaker-resnet34` | [Wespeaker/wespeaker-voxceleb-resnet34-LM](https://huggingface.co/Wespeaker/wespeaker-voxceleb-resnet34-LM) | cc-by-4.0 | 256 | ResNet34 r-vector, VoxCeleb2 Dev — **recommended default** |
 | `wespeaker-ecapa512` | [Wespeaker/wespeaker-ecapa-tdnn512-LM](https://huggingface.co/Wespeaker/wespeaker-ecapa-tdnn512-LM) | cc-by-4.0 | 192 | ECAPA-TDNN-512 x-vector, VoxCeleb2 Dev |
+| `wespeaker-resnet293` | [Wespeaker/wespeaker-voxceleb-resnet293-LM](https://huggingface.co/Wespeaker/wespeaker-voxceleb-resnet293-LM) | cc-by-4.0 | 256 | ResNet293 r-vector — highest accuracy, 28M params |
+| `campplus` | [csukuangfj/speaker-embedding-models](https://huggingface.co/csukuangfj/speaker-embedding-models) | cc-by-4.0 | 512 | CAM++ (D-TDNN backbone), VoxCeleb2 Dev |
+| `campplus-zh-en` | [csukuangfj/speaker-embedding-models](https://huggingface.co/csukuangfj/speaker-embedding-models) | apache-2.0 | 192 | 3D-Speaker CAM++ multilingual (zh+en) |
+| `eres2net` | [csukuangfj/speaker-embedding-models](https://huggingface.co/csukuangfj/speaker-embedding-models) | apache-2.0 | 192 | ERes2Net, VoxCeleb |
+| `titanet-small` | [csukuangfj/speaker-embedding-models](https://huggingface.co/csukuangfj/speaker-embedding-models) | cc-by-4.0 | 192 | NVIDIA NeMo TitaNet-small (~40 MB) |
+| `titanet-large` | [csukuangfj/speaker-embedding-models](https://huggingface.co/csukuangfj/speaker-embedding-models) | cc-by-4.0 | 192 | NVIDIA NeMo TitaNet-large (~101 MB) |
+| `redimnet-b2` | [OpenVoiceOS/redimnet-b2-vox2-onnx](https://huggingface.co/OpenVoiceOS/redimnet-b2-vox2-onnx) | apache-2.0 | 192 | ReDimNet b2 (1.8M params), raw audio input |
 
 Models are downloaded on first use into the shared HuggingFace cache (`HF_HOME`).
+
+Use `speakeronnx list` to print descriptions and metadata for all registered models.
 
 ## Feature frontend
 
