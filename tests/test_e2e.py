@@ -74,7 +74,17 @@ def audio_dir(tmp_path_factory):
     return clips
 
 
-@pytest.mark.parametrize("alias", ["wespeaker-resnet34", "wespeaker-ecapa512"])
+@pytest.mark.parametrize("alias", [
+    "wespeaker-resnet34",
+    "wespeaker-ecapa512",
+    "wespeaker-resnet293",
+    "campplus",
+    "campplus-zh-en",
+    "eres2net",
+    "titanet-small",
+    "titanet-large",
+    "redimnet-b2",
+])
 class TestE2ESpeakerVerification:
     def test_same_speaker_higher_than_cross(self, alias, audio_dir):
         from speakeronnx import SpeakerEmbedder, cosine
