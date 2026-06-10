@@ -1,6 +1,8 @@
 """End-to-end tests — downloads real ONNX models and generates real audio.
 
-Requires: edge-tts (pip install edge-tts) and ffmpeg on PATH.
+Uses phoonnx (phoonnx) for TTS voice generation — 1000+ voices available,
+no external TTS binaries needed.
+
 Run with: pytest tests/test_e2e.py -v -s
 
 Two test classes:
@@ -10,15 +12,14 @@ Two test classes:
 - ``TestE2ESpeakerSeparation`` — models that consistently separate these TTS voices
   (same-speaker > cross-speaker, three-voice ordering).
 
-Tests generate 3 utterances for voice A (en-US-GuyNeural), 3 for voice B
-(en-US-JennyNeural), and 3 for voice C (en-GB-RyanNeural).
+Tests generate 3 utterances per voice using phoonnx piper voices:
+A: piper/en_US-amy-medium (female, US)
+B: piper/en_US-joe-medium   (male, US)
+C: piper/en_GB-alan-medium  (male, GB)
 """
 
 import os
-import subprocess
 import sys
-import tempfile
-import unittest
 
 import numpy as np
 import pytest
@@ -30,57 +31,41 @@ UTTERANCES = [
     "Voice biometrics provide an additional layer of security.",
 ]
 
-VOICE_A = "en-US-GuyNeural"
-VOICE_B = "en-US-JennyNeural"
-VOICE_C = "en-GB-RyanNeural"
-
-
-def _tts_to_wav(text: str, voice: str, path: str, timeout: int = 60) -> None:
-    """Generate speech via edge-tts and convert to 16k mono WAV."""
-    mp3 = path.replace(".wav", ".mp3")
-    subprocess.run(
-        ["edge-tts", "--voice", voice, "--text", text, "--write-media", mp3],
-        check=True, timeout=timeout, capture_output=True,
-    )
-    subprocess.run(
-        ["ffmpeg", "-y", "-i", mp3, "-ar", "16000", "-ac", "1", "-f", "wav", path],
-        check=True, timeout=30, capture_output=True,
-    )
-    os.unlink(mp3)
+VOICE_A = "piper/en_US-amy-medium"
+VOICE_B = "piper/en_US-joe-medium"
+VOICE_C = "piper/en_GB-alan-medium"
 
 
 def _skip_if_no_tts():
     try:
-        subprocess.run(["edge-tts", "--version"], capture_output=True, timeout=5)
-    except (FileNotFoundError, subprocess.TimeoutExpired):
-        pytest.skip("edge-tts not available")
-    try:
-        subprocess.run(["ffmpeg", "-version"], capture_output=True, timeout=5)
-    except (FileNotFoundError, subprocess.TimeoutExpired):
-        pytest.skip("ffmpeg not available")
+        from phoonnx.opm import PhoonnxTTSPlugin  # noqa: F401
+    except ImportError:
+        pytest.skip("phoonnx not available")
 
 
 @pytest.fixture(scope="module")
 def audio_dir(tmp_path_factory):
-    """Generate all test audio clips once per module."""
+    """Generate all test audio clips once per module via phoonnx."""
     _skip_if_no_tts()
+    from phoonnx.opm import PhoonnxTTSPlugin
+    tts = PhoonnxTTSPlugin()
     d = tmp_path_factory.mktemp("audio")
 
     clips = {}
-    for voice, tag in [(VOICE_A, "A"), (VOICE_B, "B"), (VOICE_C, "C")]:
+    for voice_id, tag in [(VOICE_A, "A"), (VOICE_B, "B"), (VOICE_C, "C")]:
         for i, text in enumerate(UTTERANCES):
             path = str(d / f"{tag}{i+1}.wav")
-            _tts_to_wav(text, voice, path)
+            tts.get_tts(text, path, voice=voice_id)
             clips[f"{tag}{i+1}"] = path
 
     return clips
 
 
-# Models for which the speaker-separation e2e tests (same-speaker > cross-speaker)
-# are known to fail with short TTS utterances. The models themselves work correctly
-# (determinism, L2 norm)- it is the TTS acoustics / utterance length that makes
-# speaker separation unreliable.  The pipeline-only tests (determinism, L2 norm)
-# still run via the full parametrize.
+# Models that pass speaker-separation e2e (same-speaker > cross-speaker) with
+# phoonnx piper voices (amy-female US / joe-male US / alan-male GB).
+# campplus is excluded — its embeddings are too utterance-dependent for short TTS
+# clips (same-speaker similarity ~0.07 vs cross ~0.50).  Pipeline-only tests
+# (determinism, L2 norm) still run on all models via the full parametrize.
 _SPEAKER_SEP_MODELS = [
     "wespeaker-resnet34",
     "wespeaker-ecapa512",
@@ -88,10 +73,12 @@ _SPEAKER_SEP_MODELS = [
     "campplus-zh-en",
     "eres2net",
     "redimnet-b2",
+    "titanet-small",
+    "titanet-large",
 ]
 
-# All models (including ones that fail speaker-separation on short TTS audio)
-_ALL_MODELS = sorted(_SPEAKER_SEP_MODELS + ["campplus", "titanet-small", "titanet-large"])
+# All models (full parametrize for pipeline-only tests)
+_ALL_MODELS = sorted(_SPEAKER_SEP_MODELS + ["campplus"])
 
 
 @pytest.mark.parametrize("alias", _ALL_MODELS)
