@@ -71,6 +71,7 @@ from speakeronnx.embedder import (
     SpeakerEmbedder,
     MODEL_REGISTRY,
     ModelEntry,
+    DEFAULT_MODEL,
     cosine,
     verify,
 )
@@ -79,6 +80,7 @@ __all__ = [
     "SpeakerEmbedder",
     "MODEL_REGISTRY",
     "ModelEntry",
+    "DEFAULT_MODEL",
     "cosine",
     "verify",
 ]

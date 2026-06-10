@@ -240,12 +240,8 @@ def _load_wav(path: str) -> Tuple[np.ndarray, int]:
             vals.append(v)
         data = np.array(vals, dtype=np.float32) / 8388608.0
     elif sample_width == 4:
-        # Could be int32 or float32; try float first heuristic
-        try:
-            data = np.frombuffer(raw, dtype=np.float32)
-            if np.max(np.abs(data)) > 2.0:
-                raise ValueError
-        except (ValueError, TypeError):
+        data = np.frombuffer(raw, dtype=np.float32)
+        if not np.all(np.isfinite(data)) or np.max(np.abs(data)) > 2.0:
             data = np.frombuffer(raw, dtype=np.int32).astype(np.float32) / 2147483648.0
     else:
         raise ValueError(f"Unsupported sample width: {sample_width} bytes")
