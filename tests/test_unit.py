@@ -1,7 +1,9 @@
 """Unit tests — no real model download required (sessions are mocked)."""
 import math
+import os
 import types
 import unittest
+import wave
 from unittest.mock import MagicMock, patch
 
 import numpy as np
@@ -203,6 +205,123 @@ class TestSpeakerEmbedderMocked(unittest.TestCase):
     def test_verify_threshold(self):
         embedder, fake = self._make_embedder_with_mock()
         ok, score = embedder.verify(fake, fake, threshold=0.5)
+        self.assertTrue(ok)
+
+
+class TestAudioLoadingEdgeCases(unittest.TestCase):
+    """Edge cases for audio loading — stereo, resampling, 8-bit."""
+
+    def _write_wav(self, samples: np.ndarray, sample_width: int,
+                   n_channels: int, framerate: int) -> str:
+        import tempfile
+        with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as f:
+            path = f.name
+        with wave.open(path, "wb") as wf:
+            wf.setnchannels(n_channels)
+            wf.setsampwidth(sample_width)
+            wf.setframerate(framerate)
+            wf.writeframes(samples.tobytes())
+        return path
+
+    def test_stereo_wav_downmixed_to_mono(self):
+        """Stereo WAV is downmixed to mono."""
+        from speakeronnx.embedder import load_audio
+        n = 1600
+        left = np.full(n, 16000, dtype=np.int16)
+        right = np.zeros(n, dtype=np.int16)
+        interleaved = np.empty(n * 2, dtype=np.int16)
+        interleaved[0::2] = left
+        interleaved[1::2] = right
+        path = self._write_wav(interleaved, sample_width=2, n_channels=2, framerate=16000)
+        try:
+            out = load_audio(path, target_sr=16000)
+            self.assertEqual(out.ndim, 1)
+            self.assertEqual(len(out), n)
+            # mean of left+right: 16000/32768 * 0.5 ≈ 0.244
+            self.assertAlmostEqual(float(out.mean()), 16000 / 32768.0 / 2.0, delta=0.01)
+        finally:
+            os.unlink(path)
+
+    def test_8bit_wav_loaded(self):
+        """8-bit unsigned WAV is loaded and normalised."""
+        from speakeronnx.embedder import load_audio
+        # 128 = silence (zero), 255 = max positive, 0 = max negative
+        audio_u8 = np.array([128, 255, 0], dtype=np.uint8)
+        path = self._write_wav(audio_u8, sample_width=1, n_channels=1, framerate=16000)
+        try:
+            out = load_audio(path, target_sr=16000)
+            self.assertEqual(len(out), 3)
+            self.assertAlmostEqual(float(out[0]), 0.0, delta=0.01)   # silence
+            self.assertGreater(float(out[1]), 0.0)                    # positive
+            self.assertLess(float(out[2]), 0.0)                       # negative
+        finally:
+            os.unlink(path)
+
+    def test_resample_numpy_same_rate_passthrough(self):
+        """_resample_numpy with same rate returns the original array."""
+        from speakeronnx.embedder import _resample_numpy
+        audio = np.random.randn(16000).astype(np.float32)
+        out = _resample_numpy(audio, 16000, 16000)
+        np.testing.assert_array_equal(audio, out)
+
+    def test_resample_numpy_changes_length(self):
+        """_resample_numpy with different rate changes array length."""
+        from speakeronnx.embedder import _resample_numpy
+        audio = np.random.randn(8000).astype(np.float32)
+        out = _resample_numpy(audio, 8000, 16000)
+        self.assertEqual(len(out), 16000)
+
+    def test_load_audio_resamples_to_target_sr(self):
+        """WAV at 8 kHz is resampled to 16 kHz by load_audio."""
+        import tempfile
+        from speakeronnx.embedder import load_audio
+        n = 800
+        audio = np.zeros(n, dtype=np.int16)
+        with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as f:
+            path = f.name
+        try:
+            with wave.open(path, "wb") as wf:
+                wf.setnchannels(1)
+                wf.setsampwidth(2)
+                wf.setframerate(8000)
+                wf.writeframes(audio.tobytes())
+            out = load_audio(path, target_sr=16000)
+            self.assertEqual(len(out), 1600)
+        finally:
+            os.unlink(path)
+
+
+class TestVerifyBoundary(unittest.TestCase):
+    """Boundary / edge cases for verify() and cosine()."""
+
+    def test_verify_exactly_at_threshold_accepts(self):
+        """Score exactly equal to threshold is accepted (>=)."""
+        from speakeronnx import cosine, verify
+        # Construct two vectors with cosine == 0.5 exactly
+        a = np.array([1.0, 0.0], dtype=np.float32)
+        angle = math.acos(0.5)
+        b = np.array([math.cos(angle), math.sin(angle)], dtype=np.float32)
+        ok, score = verify(a, b, threshold=0.5)
+        self.assertAlmostEqual(score, 0.5, places=5)
+        self.assertTrue(ok)
+
+    def test_cosine_high_dimensional_vectors(self):
+        """cosine() works correctly on high-dimensional embeddings."""
+        from speakeronnx import cosine
+        dim = 512
+        a = np.random.randn(dim).astype(np.float32)
+        a /= np.linalg.norm(a)
+        b = np.random.randn(dim).astype(np.float32)
+        b /= np.linalg.norm(b)
+        score = cosine(a, b)
+        self.assertGreaterEqual(score, -1.0)
+        self.assertLessEqual(score, 1.0)
+
+    def test_verify_default_threshold(self):
+        """verify() without explicit threshold uses 0.45."""
+        from speakeronnx import verify
+        v = np.array([1.0, 0.0], dtype=np.float32)
+        ok, _ = verify(v, v)  # cosine=1.0 > 0.45
         self.assertTrue(ok)
 
 

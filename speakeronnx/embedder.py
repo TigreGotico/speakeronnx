@@ -495,6 +495,7 @@ class SpeakerEmbedder:
         if providers is None:
             providers = ["CPUExecutionProvider"]
 
+        self._entry: Optional[ModelEntry]
         if model in MODEL_REGISTRY:
             self._entry = MODEL_REGISTRY[model]
             onnx_path = self._entry.download()
