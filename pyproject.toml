@@ -26,6 +26,7 @@ soxr = ["soxr"]
 test = [
     "pytest",
     "edge-tts",
+    "requests",
 ]
 
 [project.scripts]
