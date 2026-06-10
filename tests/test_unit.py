@@ -14,6 +14,13 @@ class TestModelRegistry(unittest.TestCase):
         from speakeronnx import MODEL_REGISTRY
         self.assertIn("wespeaker-resnet34", MODEL_REGISTRY)
         self.assertIn("wespeaker-ecapa512", MODEL_REGISTRY)
+        self.assertIn("wespeaker-resnet293", MODEL_REGISTRY)
+        self.assertIn("campplus", MODEL_REGISTRY)
+        self.assertIn("campplus-zh-en", MODEL_REGISTRY)
+        self.assertIn("eres2net", MODEL_REGISTRY)
+        self.assertIn("titanet-small", MODEL_REGISTRY)
+        self.assertIn("titanet-large", MODEL_REGISTRY)
+        self.assertIn("redimnet-b2", MODEL_REGISTRY)
 
     def test_registry_entries_have_required_fields(self):
         from speakeronnx import MODEL_REGISTRY
@@ -23,7 +30,7 @@ class TestModelRegistry(unittest.TestCase):
             self.assertTrue(entry.license, f"{alias} missing license")
             self.assertGreater(entry.embed_dim, 0, f"{alias} embed_dim <= 0")
             self.assertIn(entry.sample_rate, (8000, 16000, 22050, 24000, 44100, 48000))
-            self.assertEqual(entry.frontend, "fbank80")
+            self.assertIn(entry.frontend, ("fbank80", "raw"))
 
     def test_model_entry_alias_matches_key(self):
         from speakeronnx import MODEL_REGISTRY

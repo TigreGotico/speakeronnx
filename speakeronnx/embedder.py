@@ -36,6 +36,9 @@ class ModelEntry:
     num_mel_bins: int = 80
     frame_length_ms: float = 25.0
     frame_shift_ms: float = 10.0
+    input_layout: str = "BTF"       # "BTF" = [B, T, F]; "BFT" = [B, F, T]
+    output_index: int = 0            # which output contains the embedding
+    extra_feeds: Optional[Dict[str, str]] = None  # extra ONNX feed entries, "T" = frame count
     description: str = ""
 
     def download(self) -> str:
@@ -70,6 +73,131 @@ MODEL_REGISTRY: Dict[str, ModelEntry] = {
             "WeSpeaker ECAPA-TDNN-512 x-vector, large-margin finetuned on "
             "VoxCeleb2 Dev (5994 speakers). 6.19M params. Good alternative "
             "to the ResNet34 model."
+        ),
+    ),
+    # ------------------------------------------------------------------
+    # Issue #4 — WeSpeaker ResNet293
+    # ------------------------------------------------------------------
+    "wespeaker-resnet293": ModelEntry(
+        alias="wespeaker-resnet293",
+        hf_repo="Wespeaker/wespeaker-voxceleb-resnet293-LM",
+        hf_file="voxceleb_resnet293_LM.onnx",
+        license="cc-by-4.0",
+        embed_dim=256,
+        sample_rate=16000,
+        frontend="fbank80",
+        description=(
+            "WeSpeaker ResNet293 r-vector, large-margin finetuned on "
+            "VoxCeleb2 Dev (5994 speakers). 28.62M params. The largest "
+            "WeSpeaker model — best accuracy at higher compute cost."
+        ),
+    ),
+    # ------------------------------------------------------------------
+    # Issue #2 — CAM++ (WeSpeaker variant, English)
+    # ------------------------------------------------------------------
+    "campplus": ModelEntry(
+        alias="campplus",
+        hf_repo="csukuangfj/speaker-embedding-models",
+        hf_file="wespeaker_en_voxceleb_CAM++_LM.onnx",
+        license="cc-by-4.0",
+        embed_dim=512,
+        sample_rate=16000,
+        frontend="fbank80",
+        description=(
+            "WeSpeaker CAM++ (large-margin finetuned) on VoxCeleb2 Dev. "
+            "D-TDNN backbone with multi-granularity pooling. 512-dim "
+            "embedding. English, VoxCeleb trained."
+        ),
+    ),
+    # ------------------------------------------------------------------
+    # Issue #2 — CAM++ (3D-Speaker multilingual)
+    # ------------------------------------------------------------------
+    "campplus-zh-en": ModelEntry(
+        alias="campplus-zh-en",
+        hf_repo="csukuangfj/speaker-embedding-models",
+        hf_file="3dspeaker_speech_campplus_sv_zh_en_16k-common_advanced.onnx",
+        license="apache-2.0",
+        embed_dim=192,
+        sample_rate=16000,
+        frontend="fbank80",
+        description=(
+            "3D-Speaker CAM++ advanced multilingual model (zh+en). "
+            "D-TDNN backbone, 192-dim embedding, Apache-2.0. "
+            "Good for Mandarin/English mixed verification."
+        ),
+    ),
+    # ------------------------------------------------------------------
+    # Issue #5 — ERes2Net (English, VoxCeleb)
+    # ------------------------------------------------------------------
+    "eres2net": ModelEntry(
+        alias="eres2net",
+        hf_repo="csukuangfj/speaker-embedding-models",
+        hf_file="3dspeaker_speech_eres2net_sv_en_voxceleb_16k.onnx",
+        license="apache-2.0",
+        embed_dim=192,
+        sample_rate=16000,
+        frontend="fbank80",
+        description=(
+            "3D-Speaker ERes2Net trained on VoxCeleb. 192-dim embedding. "
+            "Apache-2.0. Lightweight English speaker verification."
+        ),
+    ),
+    # ------------------------------------------------------------------
+    # Issue #3 — TitaNet small (NeMo)
+    # ------------------------------------------------------------------
+    "titanet-small": ModelEntry(
+        alias="titanet-small",
+        hf_repo="csukuangfj/speaker-embedding-models",
+        hf_file="nemo_en_titanet_small.onnx",
+        license="cc-by-4.0",
+        embed_dim=192,
+        sample_rate=16000,
+        frontend="fbank80",
+        input_layout="BFT",
+        output_index=1,
+        extra_feeds={"length": "T"},
+        description=(
+            "NVIDIA NeMo TitaNet-small speaker embedding model. "
+            "192-dim embedding. Requires transposed input [B,80,T] "
+            "and frame-count length tensor. ~40 MB."
+        ),
+    ),
+    # ------------------------------------------------------------------
+    # Issue #3 — TitaNet large (NeMo)
+    # ------------------------------------------------------------------
+    "titanet-large": ModelEntry(
+        alias="titanet-large",
+        hf_repo="csukuangfj/speaker-embedding-models",
+        hf_file="nemo_en_titanet_large.onnx",
+        license="cc-by-4.0",
+        embed_dim=192,
+        sample_rate=16000,
+        frontend="fbank80",
+        input_layout="BFT",
+        output_index=1,
+        extra_feeds={"length": "T"},
+        description=(
+            "NVIDIA NeMo TitaNet-large speaker embedding model. "
+            "192-dim embedding. Larger capacity than titanet-small. "
+            "~101 MB."
+        ),
+    ),
+    # ------------------------------------------------------------------
+    # Issue #6 — ReDimNet b2 (compact high-accuracy)
+    # ------------------------------------------------------------------
+    "redimnet-b2": ModelEntry(
+        alias="redimnet-b2",
+        hf_repo="OpenVoiceOS/redimnet-b2-vox2-onnx",
+        hf_file="redimnet_b2_vox2.onnx",
+        license="apache-2.0",
+        embed_dim=192,
+        sample_rate=16000,
+        frontend="raw",
+        description=(
+            "ReDimNet b2 (Reshape Dimensions Network) from Interspeech 2024. "
+            "Compact high-accuracy model (1.8M params). Accepts raw 16kHz "
+            "audio waveform with internal MelSpectrogram frontend (72 mel "
+            "bins, f_max=7600). 192-dim embedding. Apache-2.0."
         ),
     ),
 }
@@ -112,12 +240,8 @@ def _load_wav(path: str) -> Tuple[np.ndarray, int]:
             vals.append(v)
         data = np.array(vals, dtype=np.float32) / 8388608.0
     elif sample_width == 4:
-        # Could be int32 or float32; try float first heuristic
-        try:
-            data = np.frombuffer(raw, dtype=np.float32)
-            if np.max(np.abs(data)) > 2.0:
-                raise ValueError
-        except (ValueError, TypeError):
+        data = np.frombuffer(raw, dtype=np.float32)
+        if not np.all(np.isfinite(data)) or np.max(np.abs(data)) > 2.0:
             data = np.frombuffer(raw, dtype=np.int32).astype(np.float32) / 2147483648.0
     else:
         raise ValueError(f"Unsupported sample width: {sample_width} bytes")
@@ -384,7 +508,8 @@ class SpeakerEmbedder:
 
         self._session = ort.InferenceSession(onnx_path, providers=providers)
         self._input_name = self._session.get_inputs()[0].name
-        self._output_name = self._session.get_outputs()[0].name
+        output_idx = self._entry.output_index if self._entry else 0
+        self._output_name = self._session.get_outputs()[output_idx].name
 
     @property
     def entry(self) -> Optional[ModelEntry]:
@@ -435,12 +560,29 @@ class SpeakerEmbedder:
                 dither=0.0,
                 apply_cmn=True,
             )
+        elif entry.frontend == "raw":
+            feats = audio  # pass raw waveform directly
         else:
             raise ValueError(f"Unknown frontend: {entry.frontend!r}")
 
-        # Shape: (1, T, num_mel_bins)
-        feats_in = feats[np.newaxis, :, :].astype(np.float32)
-        out = self._session.run([self._output_name], {self._input_name: feats_in})
+        # Handle input shaping / transposition
+        if entry and entry.frontend == "raw":
+            feats_in = feats[np.newaxis, np.newaxis, :].astype(np.float32)
+        elif entry and entry.input_layout == "BFT":
+            feats_in = feats.T[np.newaxis, :, :].astype(np.float32)
+        else:
+            feats_in = feats[np.newaxis, :, :].astype(np.float32)
+
+        # Build feed dict
+        feed_dict = {self._input_name: feats_in}
+        if entry and entry.extra_feeds:
+            for name, value in entry.extra_feeds.items():
+                if value == "T":
+                    feed_dict[name] = np.array([feats.shape[0]], dtype=np.int64)
+                else:
+                    raise ValueError(f"Unknown extra_feed value: {value!r}")
+
+        out = self._session.run([self._output_name], feed_dict)
         emb = out[0].ravel().astype(np.float32)
 
         # L2 normalise
