@@ -26,6 +26,7 @@ soxr = ["soxr"]
 test = [
     "pytest",
     "edge-tts",
+    "requests",
 ]
 
 [project.scripts]
@@ -35,7 +36,7 @@ speakeronnx = "speakeronnx.__main__:main"
 Homepage = "https://github.com/TigreGotico/speakeronnx"
 
 [tool.setuptools.dynamic]
-version = {attr = "version.__version__"}
+version = {attr = "speakeronnx.version.__version__"}
 
 [tool.setuptools.packages.find]
 where = ["."]
