@@ -1,9 +1,11 @@
 # speakeronnx
 
-Pure-onnxruntime speaker embedding library — no torch at runtime.
+speakeronnx is a speaker embedding library built on `onnxruntime`. It does not need
+torch at runtime.
 
-Extract speaker embeddings, compute cosine similarity, and verify speaker identity
-using ONNX-exported models downloaded automatically from HuggingFace.
+The library extracts speaker embeddings from audio, computes cosine similarity between
+them, and verifies speaker identity. It downloads ONNX models from HuggingFace
+automatically.
 
 ## Installation
 
@@ -28,8 +30,8 @@ alice1 = embedder.embed("alice_clip1.wav")
 alice2 = embedder.embed("alice_clip2.wav")
 bob    = embedder.embed("bob_clip1.wav")
 
-print(cosine(alice1, alice2))   # e.g. 0.82 — same speaker
-print(cosine(alice1, bob))      # e.g. 0.21 — different speaker
+print(cosine(alice1, alice2))   # e.g. 0.82 - same speaker
+print(cosine(alice1, bob))      # e.g. 0.21 - different speaker
 
 ok, score = verify(alice1, alice2, threshold=0.45)
 print(ok, score)  # True 0.82
@@ -37,7 +39,8 @@ print(ok, score)  # True 0.82
 
 ## Models
 
-All models are downloaded on first use into the shared HuggingFace cache (`HF_HOME`).
+The library downloads each model on first use into the shared HuggingFace cache
+(`HF_HOME`).
 
 | Alias | Embed dim | Params | Frontend | License |
 |---|---|---|---|---|

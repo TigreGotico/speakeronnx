@@ -1,6 +1,6 @@
 # Model guide
 
-All 9 models are registered in `speakeronnx.MODEL_REGISTRY` and downloaded
+`speakeronnx.MODEL_REGISTRY` registers 9 models. The library downloads each one
 automatically via `huggingface_hub` on first use.
 
 ## Choosing a model
@@ -33,22 +33,22 @@ automatically via `huggingface_hub` on first use.
 
 ### `fbank80` models (all except redimnet-b2)
 
-Expect 80-dim log-Mel filterbank features with per-utterance CMN.
+These models expect 80-dim log-Mel filterbank features with per-utterance CMN.
 The library's `compute_fbank` function implements this in pure numpy.
 
 Processing flow:
 1. Load PCM WAV, resample to 16 kHz
 2. Pre-emphasis (0.97)
 3. Hamming window (25 ms frame, 10 ms shift)
-4. Mel filterbank (80 bins, 20–8000 Hz)
+4. Mel filterbank (80 bins, 20-8000 Hz)
 5. Log power spectrum
 6. Per-utterance CMN (subtract time-axis mean)
 
 ### `raw` models (redimnet-b2)
 
-Accepts raw 16 kHz waveform. The ONNX model contains an internal
+This model accepts a raw 16 kHz waveform. The ONNX model contains an internal
 MelSpectrogram frontend (72 mel bins, f_max=7600 Hz, n_fft=512, hop=128).
-No pre-emphasis or CMN applied externally.
+The library applies no pre-emphasis or CMN externally.
 
 ## Input layouts
 
@@ -57,27 +57,30 @@ No pre-emphasis or CMN applied externally.
 | `BTF` | `[B, T, F]` | All WeSpeaker, CAM++, ERes2Net, ReDimNet |
 | `BFT` | `[B, F, T]` | TitaNet small/large |
 
-Layout is handled automatically by `SpeakerEmbedder.embed()`.
+`SpeakerEmbedder.embed()` handles the layout automatically.
 
 ## Extra ONNX feeds
 
-Some models require additional input tensors aside from the audio features:
+Some models need extra input tensors besides the audio features:
 
 | Model | Extra feed | Type | Value |
 |---|---|---|---|
 | `titanet-small` | `length` | `int64[B]` | Frame count per utterance |
 | `titanet-large` | `length` | `int64[B]` | Frame count per utterance |
 
-These are populated automatically.
+The library populates these automatically.
 
 ## Output index
 
-Most models have a single output (the embedding). TitaNet models have two
+Most models have a single output, the embedding. TitaNet models have two
 outputs (`logits` at index 0, `embs` at index 1). `SpeakerEmbedder` selects
 the correct output automatically.
 
 ## Model sources
 
-- **Wespeaker models**: [Wespeaker org](https://huggingface.co/Wespeaker) — cc-by-4.0
-- **csukuangfj bundle**: [csukuangfj/speaker-embedding-models](https://huggingface.co/csukuangfj/speaker-embedding-models) — cc-by-4.0 / apache-2.0
-- **RedimNet**: [OpenVoiceOS/redimnet-b2-vox2-onnx](https://huggingface.co/OpenVoiceOS/redimnet-b2-vox2-onnx) — apache-2.0
+- **Wespeaker models**: [Wespeaker org](https://huggingface.co/Wespeaker) - cc-by-4.0
+- **csukuangfj bundle**: [csukuangfj/speaker-embedding-models](https://huggingface.co/csukuangfj/speaker-embedding-models) - cc-by-4.0 / apache-2.0
+- **RedimNet**: [OpenVoiceOS/redimnet-b2-vox2-onnx](https://huggingface.co/OpenVoiceOS/redimnet-b2-vox2-onnx) - apache-2.0
+
+---
+[Home](index.md) · [API reference →](api.md)
