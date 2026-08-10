@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.0.2a2](https://github.com/TigreGotico/speakeronnx/tree/0.0.2a2) (2026-08-10)
+
+[Full Changelog](https://github.com/TigreGotico/speakeronnx/compare/0.0.2a1...0.0.2a2)
+
+**Merged pull requests:**
+
+- chore: add Apache-2.0 LICENSE [\#15](https://github.com/TigreGotico/speakeronnx/pull/15) ([JarbasAl](https://github.com/JarbasAl))
+
 ## [0.0.2a1](https://github.com/TigreGotico/speakeronnx/tree/0.0.2a1) (2026-07-30)
 
 [Full Changelog](https://github.com/TigreGotico/speakeronnx/compare/0.0.1...0.0.2a1)
