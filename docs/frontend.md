@@ -3,7 +3,7 @@
 ## Fbank80 (WeSpeaker-style)
 
 All models except `redimnet-b2` use 80-dim log-Mel filterbank features
-with per-utterance cepstral mean normalisation (CMN). This matches the
+with per-utterance cepstral mean normalization (CMN). This matches the
 WeSpeaker training pipeline exactly.
 
 ### Processing steps
@@ -24,7 +24,7 @@ Hamming window
 FFT (power spectrum)
         │
         ▼
-Mel filterbank (80 bins, 20–8000 Hz)
+Mel filterbank (80 bins, 20-8000 Hz)
         │
         ▼
 Log(mel_power)
@@ -41,12 +41,12 @@ Output: (T, 80) float32
 The frontend is implemented in pure numpy in `speakeronnx.embedder.compute_fbank`.
 Key design decisions:
 
-- **No librosa/soundfile** — zero external audio processing dependencies.
-- **Filterbank caching** — the mel filterbank matrix is computed once and
+- **No librosa/soundfile** - zero external audio processing dependencies.
+- **Filterbank caching** - the mel filterbank matrix is computed once and
   cached per `(num_mel_bins, n_fft, sample_rate)` key.
-- **CMN at inference** — WeSpeaker eval pipeline uses per-utterance CMN,
+- **CMN at inference** - WeSpeaker eval pipeline uses per-utterance CMN,
   not speaker-level or global statistics.
-- **Dither disabled** — `dither=0.0` during inference matches WeSpeaker eval.
+- **Dither disabled** - `dither=0.0` during inference matches WeSpeaker eval.
 
 ### Parameters
 
@@ -89,8 +89,11 @@ The model's internal frontend handles everything.
 | External deps | None (pure numpy) | None (pure numpy) |
 | Pre-emphasis | 0.97 | Internal to model |
 | Mel bins | 80 | 72 |
-| Freq range | 20–8000 Hz | 0–7600 Hz |
+| Freq range | 20-8000 Hz | 0-7600 Hz |
 | CMN | Per-utterance | None |
 | Frame length | 25 ms | ~32 ms (n_fft=512) |
 | Frame shift | 10 ms | 8 ms (hop=128 at 16 kHz) |
 | N_FFT | Adaptive (next power of 2 ≥ frame_length) | 512 (fixed in model) |
+
+---
+[← CLI reference](cli.md) · [Home](index.md) · [Advanced usage →](advanced.md)

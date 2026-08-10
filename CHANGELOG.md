@@ -1,15 +1,20 @@
 # Changelog
 
-## [0.0.1a2](https://github.com/TigreGotico/speakeronnx/tree/0.0.1a2) (2026-06-13)
+## [0.0.2a2](https://github.com/TigreGotico/speakeronnx/tree/0.0.2a2) (2026-08-10)
 
-[Full Changelog](https://github.com/TigreGotico/speakeronnx/compare/a4476575e2ac793350858d035368a6f5e5ee9bdb...0.0.1a2)
+[Full Changelog](https://github.com/TigreGotico/speakeronnx/compare/0.0.2a1...0.0.2a2)
 
 **Merged pull requests:**
 
-- Move version.py into package dir; replace workflows with shared gh-automations callers [\#10](https://github.com/TigreGotico/speakeronnx/pull/10) ([JarbasAl](https://github.com/JarbasAl))
-- refactor: type fix, mypy config, expanded model table, edge-case tests [\#8](https://github.com/TigreGotico/speakeronnx/pull/8) ([JarbasAl](https://github.com/JarbasAl))
-- feat: add CAM++, ERes2Net, ResNet293, TitaNet, ReDimNet + docs, examples, expanded tests [\#7](https://github.com/TigreGotico/speakeronnx/pull/7) ([JarbasAl](https://github.com/JarbasAl))
-- feat: speakeronnx core [\#1](https://github.com/TigreGotico/speakeronnx/pull/1) ([JarbasAl](https://github.com/JarbasAl))
+- chore: add Apache-2.0 LICENSE [\#15](https://github.com/TigreGotico/speakeronnx/pull/15) ([JarbasAl](https://github.com/JarbasAl))
+
+## [0.0.2a1](https://github.com/TigreGotico/speakeronnx/tree/0.0.2a1) (2026-07-30)
+
+[Full Changelog](https://github.com/TigreGotico/speakeronnx/compare/0.0.1...0.0.2a1)
+
+**Merged pull requests:**
+
+- docs: rewrite README in Simplified Technical English [\#13](https://github.com/TigreGotico/speakeronnx/pull/13) ([JarbasAl](https://github.com/JarbasAl))
 
 
 

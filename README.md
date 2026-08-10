@@ -1,9 +1,11 @@
 # speakeronnx
 
-Pure-onnxruntime speaker embedding library — no torch at runtime.
+speakeronnx is a speaker embedding library built on `onnxruntime`. It does not need
+torch at runtime.
 
-Extract speaker embeddings, compute cosine similarity, and verify speaker identity
-using ONNX-exported models downloaded automatically from HuggingFace.
+The library extracts speaker embeddings from audio, computes cosine similarity between
+them, and verifies speaker identity. It downloads ONNX models from HuggingFace
+automatically.
 
 **Model collection:** [OpenVoiceOS/speaker-embeddings-onnx](https://huggingface.co/collections/OpenVoiceOS/speaker-embeddings-onnx)
 
@@ -29,8 +31,8 @@ alice1 = embedder.embed("alice_clip1.wav")
 alice2 = embedder.embed("alice_clip2.wav")
 bob    = embedder.embed("bob_clip1.wav")
 
-print(cosine(alice1, alice2))   # e.g. 0.82  — same speaker
-print(cosine(alice1, bob))      # e.g. 0.21  — different speaker
+print(cosine(alice1, alice2))   # e.g. 0.82  - same speaker
+print(cosine(alice1, bob))      # e.g. 0.21  - different speaker
 
 ok, score = verify(alice1, alice2, threshold=0.45)
 print(ok, score)  # True 0.82
@@ -52,7 +54,7 @@ Full CLI reference in [`docs/cli.md`](docs/cli.md).
 
 ## Models
 
-All 9 models are registered in `MODEL_REGISTRY` and downloaded on first use:
+The library registers 9 models in `MODEL_REGISTRY`. Each one downloads on first use:
 
 | Alias | Embed dim | Frontend | License |
 |---|---|---|---|
@@ -96,11 +98,18 @@ Full model comparison and selection guide in [`docs/models.md`](docs/models.md).
 # Unit tests (mocked, no downloads, no network)
 pytest tests/test_unit.py tests/test_audio.py tests/test_frontend.py \
       tests/test_embedder.py tests/test_cli.py tests/test_model_registry.py -v
+
+# End-to-end tests (downloads models + generates TTS audio)
+pytest tests/test_e2e.py -v -s
+```
+
+Each registered model has an HF source, license, and embedding dimension:
+
 | Alias | HF repo | License | Embed dim | Description |
 |---|---|---|---|---|
-| `wespeaker-resnet34` | [Wespeaker/wespeaker-voxceleb-resnet34-LM](https://huggingface.co/Wespeaker/wespeaker-voxceleb-resnet34-LM) | cc-by-4.0 | 256 | ResNet34 r-vector, VoxCeleb2 Dev — **recommended default** |
+| `wespeaker-resnet34` | [Wespeaker/wespeaker-voxceleb-resnet34-LM](https://huggingface.co/Wespeaker/wespeaker-voxceleb-resnet34-LM) | cc-by-4.0 | 256 | ResNet34 r-vector, VoxCeleb2 Dev - **recommended default** |
 | `wespeaker-ecapa512` | [Wespeaker/wespeaker-ecapa-tdnn512-LM](https://huggingface.co/Wespeaker/wespeaker-ecapa-tdnn512-LM) | cc-by-4.0 | 192 | ECAPA-TDNN-512 x-vector, VoxCeleb2 Dev |
-| `wespeaker-resnet293` | [Wespeaker/wespeaker-voxceleb-resnet293-LM](https://huggingface.co/Wespeaker/wespeaker-voxceleb-resnet293-LM) | cc-by-4.0 | 256 | ResNet293 r-vector — highest accuracy, 28M params |
+| `wespeaker-resnet293` | [Wespeaker/wespeaker-voxceleb-resnet293-LM](https://huggingface.co/Wespeaker/wespeaker-voxceleb-resnet293-LM) | cc-by-4.0 | 256 | ResNet293 r-vector - highest accuracy, 28M params |
 | `campplus` | [csukuangfj/speaker-embedding-models](https://huggingface.co/csukuangfj/speaker-embedding-models) | cc-by-4.0 | 512 | CAM++ (D-TDNN backbone), VoxCeleb2 Dev |
 | `campplus-zh-en` | [csukuangfj/speaker-embedding-models](https://huggingface.co/csukuangfj/speaker-embedding-models) | apache-2.0 | 192 | 3D-Speaker CAM++ multilingual (zh+en) |
 | `eres2net` | [csukuangfj/speaker-embedding-models](https://huggingface.co/csukuangfj/speaker-embedding-models) | apache-2.0 | 192 | ERes2Net, VoxCeleb |
@@ -108,25 +117,22 @@ pytest tests/test_unit.py tests/test_audio.py tests/test_frontend.py \
 | `titanet-large` | [csukuangfj/speaker-embedding-models](https://huggingface.co/csukuangfj/speaker-embedding-models) | cc-by-4.0 | 192 | NVIDIA NeMo TitaNet-large (~101 MB) |
 | `redimnet-b2` | [OpenVoiceOS/redimnet-b2-vox2-onnx](https://huggingface.co/OpenVoiceOS/redimnet-b2-vox2-onnx) | apache-2.0 | 192 | ReDimNet b2 (1.8M params), raw audio input |
 
-# End-to-end tests (downloads models + generates TTS audio)
-pytest tests/test_e2e.py -v -s
-```
-
-Use `speakeronnx list` to print descriptions and metadata for all registered models.
+Run `speakeronnx list` to print descriptions and metadata for all registered models.
 
 ## Feature frontend
 
-- **fbank80** models: 80-dim log-Mel filterbank with per-utterance CMN,
+- **fbank80** models use an 80-dim log-Mel filterbank with per-utterance CMN,
   implemented in pure numpy. See [`docs/frontend.md`](docs/frontend.md).
-- **raw** models (redimnet-b2): raw 16 kHz waveform passed directly
-  to ONNX (internal MelSpectrogram in the model).
+- **raw** models (redimnet-b2) pass the raw 16 kHz waveform directly
+  to ONNX. The model has an internal MelSpectrogram.
 
 ## Audio requirements
 
 - Mono PCM WAV, any bit depth (8/16/24/32-bit int, 32-bit float)
-- Any sample rate (resampled internally to 16 kHz)
-- Stereo files are downmixed to mono
-- Minimum ~1 second; recommended enrollment 5–30 seconds per speaker
+- Any sample rate (the library resamples internally to 16 kHz)
+- The library downmixes stereo files to mono
+- Minimum length ~1 second
+- Recommended enrollment length 5-30 seconds per speaker
 
 ## Dependencies
 
@@ -135,7 +141,8 @@ Use `speakeronnx list` to print descriptions and metadata for all registered mod
 - `huggingface_hub`
 - `soxr` (optional, for high-quality resampling)
 
-## Project links
+## Related projects
 
 - **GitHub:** [TigreGotico/speakeronnx](https://github.com/TigreGotico/speakeronnx)
 - **PyPI:** `pip install speakeronnx`
+- [TigreGotico/speechonnxmetrics](https://github.com/TigreGotico/speechonnxmetrics) uses speakeronnx for its speaker-similarity metric.
