@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.0.2a3](https://github.com/TigreGotico/speakeronnx/tree/0.0.2a3) (2026-09-17)
+
+[Full Changelog](https://github.com/TigreGotico/speakeronnx/compare/0.0.2a2...0.0.2a3)
+
+**Merged pull requests:**
+
+- test: hard-require phoonnx so the speaker-separation e2e runs in CI [\#17](https://github.com/TigreGotico/speakeronnx/pull/17) ([openvoiceos-bot](https://github.com/openvoiceos-bot))
+
 ## [0.0.2a2](https://github.com/TigreGotico/speakeronnx/tree/0.0.2a2) (2026-08-10)
 
 [Full Changelog](https://github.com/TigreGotico/speakeronnx/compare/0.0.2a1...0.0.2a2)
