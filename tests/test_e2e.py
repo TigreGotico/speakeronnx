@@ -36,17 +36,10 @@ VOICE_B = "piper/en_US-joe-medium"
 VOICE_C = "piper/en_GB-alan-medium"
 
 
-def _skip_if_no_tts():
-    try:
-        from phoonnx.opm import PhoonnxTTSPlugin  # noqa: F401
-    except ImportError:
-        pytest.skip("phoonnx not available")
-
 
 @pytest.fixture(scope="module")
 def audio_dir(tmp_path_factory):
     """Generate all test audio clips once per module via phoonnx."""
-    _skip_if_no_tts()
     from phoonnx.opm import PhoonnxTTSPlugin
     tts = PhoonnxTTSPlugin()
     d = tmp_path_factory.mktemp("audio")
