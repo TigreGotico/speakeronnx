@@ -12,7 +12,7 @@ from speakeronnx import SpeakerEmbedder, cosine, verify, MODEL_REGISTRY, ModelEn
 MODEL_REGISTRY: Dict[str, ModelEntry]
 ```
 
-A dict mapping alias strings to `ModelEntry` dataclass instances.
+A dict that maps alias strings to `ModelEntry` dataclass instances.
 All 9 built-in models are registered here.
 
 ### `ModelEntry`
@@ -60,7 +60,7 @@ entry.download() -> str
 ```
 
 Downloads the ONNX file via `huggingface_hub` and returns the local path.
-The file is cached in the shared HF cache (`HF_HOME`).
+The library caches the file in the shared HF cache (`HF_HOME`).
 
 ---
 
@@ -79,9 +79,9 @@ The main class for extracting speaker embeddings.
 
 **Parameters:**
 
-- `model` — alias from `MODEL_REGISTRY` (e.g. `"wespeaker-resnet34"`) or
+- `model` - alias from `MODEL_REGISTRY` (e.g. `"wespeaker-resnet34"`) or
   absolute path to a custom `.onnx` file.
-- `providers` — ONNX Runtime execution providers (defaults to `["CPUExecutionProvider"]`).
+- `providers` - ONNX Runtime execution providers (defaults to `["CPUExecutionProvider"]`).
 
 **Properties:**
 
@@ -101,12 +101,12 @@ Extract a speaker embedding from audio.
 
 **Parameters:**
 
-- `source` — path to a WAV file, or a float32 numpy array at the
+- `source` - path to a WAV file, or a float32 numpy array at the
   model's expected sample rate.
 
 **Returns:**
 
-- L2-normalised 1-D float32 embedding vector.
+- L2-normalized 1-D float32 embedding vector.
 
 **Processing pipeline:**
 
@@ -115,7 +115,7 @@ Extract a speaker embedding from audio.
 3. Reshape/transpose input to match model's expected layout
 4. Add extra ONNX feeds (TitaNet length tensor)
 5. Run ONNX inference
-6. L2-normalise the output embedding
+6. L2-normalize the output embedding
 
 #### `cosine()`
 
@@ -169,12 +169,16 @@ Verify whether two embeddings belong to the same speaker.
 
 **Parameters:**
 
-- `a, b` — speaker embedding vectors.
-- `threshold` — cosine similarity threshold. Scores above this are
-  accepted as the same speaker. Default `0.45` is a reasonable starting
-  point; tune on your own data for the desired FAR/FRR trade-off.
+- `a, b` - speaker embedding vectors.
+- `threshold` - cosine similarity threshold. Scores above this are
+  accepted as the same speaker. The default `0.45` is a reasonable starting
+  point. Tune it on your own data for the false-accept / false-reject
+  trade-off you want.
 
 **Returns:**
 
-- `(is_same_speaker, score)` — `is_same_speaker` is `True` when
+- `(is_same_speaker, score)` - `is_same_speaker` is `True` when
   `score >= threshold`.
+
+---
+[← Model guide](models.md) · [Home](index.md) · [CLI reference →](cli.md)

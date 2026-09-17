@@ -13,7 +13,7 @@ path_emb = embedder.embed("speaker.wav")
 
 When loading from a path, `embedder.entry` is `None`, and `embedder.embed_dim`
 is `None`. The model must accept 16 kHz audio and return an embedding as its
-first output (or use `output_index` — not configurable for custom models).
+first output (or use `output_index` - not configurable for custom models).
 
 ## GPU inference
 
@@ -31,8 +31,8 @@ If CUDA is unavailable, it falls back to CPU.
 
 ## Threshold tuning
 
-The default threshold of `0.45` is a starting point. Optimal thresholds depend
-on your data, language, and desired false-accept / false-reject trade-off.
+The default threshold of `0.45` is a starting point. The optimal threshold depends
+on your data, your language, and the false-accept / false-reject trade-off you want.
 
 **To calibrate:**
 
@@ -88,3 +88,6 @@ to `embedder.embed("same.wav")` return identical results.
 |---|---|
 | `HF_HOME` | Path to HuggingFace cache (default `~/.cache/huggingface/hub`) |
 | `OMP_NUM_THREADS` | Number of threads for ONNX Runtime CPU inference |
+
+---
+[← Feature frontend](frontend.md) · [Home](index.md)
