@@ -1,7 +1,7 @@
 """Core speaker embedding engine — pure onnxruntime + numpy.
 
 No torch, no librosa, no soundfile at runtime.
-Audio loading: stdlib ``wave`` module (PCM WAV) + numpy resampling.
+Audio loading: a stdlib RIFF reader (PCM and IEEE float WAV) + numpy resampling.
 Feature frontend: 80-dim log-Mel filterbank (Fbank) with cepstral mean
 normalisation (CMN) — matches the WeSpeaker training pipeline exactly.
 """
@@ -9,7 +9,6 @@ normalisation (CMN) — matches the WeSpeaker training pipeline exactly.
 from __future__ import annotations
 
 import math
-import wave
 import struct
 import os
 from dataclasses import dataclass, field
@@ -205,44 +204,78 @@ MODEL_REGISTRY: Dict[str, ModelEntry] = {
 DEFAULT_MODEL = "wespeaker-resnet34"
 
 # ---------------------------------------------------------------------------
-# Audio loading — stdlib wave only, no librosa/soundfile
+# Audio loading — stdlib only, no librosa/soundfile
 # ---------------------------------------------------------------------------
+
+_WAVE_FORMAT_PCM = 1
+_WAVE_FORMAT_IEEE_FLOAT = 3
+_WAVE_FORMAT_EXTENSIBLE = 0xFFFE
+
+
+def _read_riff(path: str) -> Tuple[int, int, int, int, bytes]:
+    """Read a RIFF/WAVE file's format and sample bytes.
+
+    Returns (format tag, channels, sample rate, bytes per sample, data). An
+    extensible header is resolved to its sub-format. The stdlib ``wave`` module
+    refuses IEEE float files outright, so the chunks are walked here.
+    """
+    with open(path, "rb") as fh:
+        head = fh.read(12)
+        if len(head) < 12 or head[:4] != b"RIFF" or head[8:12] != b"WAVE":
+            raise ValueError(f"not a RIFF/WAVE file: {path}")
+        fmt = None
+        while True:
+            hdr = fh.read(8)
+            if len(hdr) < 8:
+                raise ValueError(f"no data chunk in {path}")
+            cid, size = hdr[:4], struct.unpack("<I", hdr[4:])[0]
+            if cid == b"fmt ":
+                body = fh.read(size)
+                tag, n_channels, framerate = struct.unpack("<HHI", body[:8])
+                bits = struct.unpack("<H", body[14:16])[0]
+                if tag == _WAVE_FORMAT_EXTENSIBLE and size >= 26:
+                    tag = struct.unpack("<H", body[24:26])[0]
+                fmt = (tag, n_channels, framerate, bits // 8)
+            elif cid == b"data":
+                if fmt is None:
+                    raise ValueError(f"data chunk before fmt chunk in {path}")
+                return (*fmt, fh.read(size))
+            else:
+                fh.seek(size, os.SEEK_CUR)
+            if size % 2:
+                fh.seek(1, os.SEEK_CUR)
+
 
 def _load_wav(path: str) -> Tuple[np.ndarray, int]:
     """Load a WAV file into a float32 numpy array normalised to [-1, 1].
 
-    Supports mono and stereo PCM WAV (8/16/24/32-bit integer, 32-bit float).
-    Returns (samples, sample_rate). Stereo is down-mixed to mono.
+    Supports mono and stereo PCM WAV (8/16/24/32-bit integer) and IEEE float
+    WAV (32/64-bit). Returns (samples, sample_rate). Stereo is down-mixed to mono.
     """
-    with wave.open(path, "rb") as wf:
-        n_channels = wf.getnchannels()
-        sample_width = wf.getsampwidth()  # bytes per sample per channel
-        framerate = wf.getframerate()
-        n_frames = wf.getnframes()
-        raw = wf.readframes(n_frames)
+    tag, n_channels, framerate, sample_width, raw = _read_riff(path)
+    raw = raw[: len(raw) - len(raw) % (sample_width * n_channels or 1)]
 
-    total_samples = n_frames * n_channels
-
-    if sample_width == 1:
+    if tag == _WAVE_FORMAT_IEEE_FLOAT:
+        if sample_width not in (4, 8):
+            raise ValueError(f"Unsupported float sample width: {sample_width} bytes")
+        data = np.frombuffer(raw, dtype="<f4" if sample_width == 4 else "<f8").astype(np.float32)
+    elif tag != _WAVE_FORMAT_PCM:
+        raise ValueError(f"Unsupported WAV format tag: {tag}")
+    elif sample_width == 1:
         # unsigned 8-bit
         data = np.frombuffer(raw, dtype=np.uint8).astype(np.float32)
         data = (data - 128.0) / 128.0
     elif sample_width == 2:
-        data = np.frombuffer(raw, dtype=np.int16).astype(np.float32) / 32768.0
+        data = np.frombuffer(raw, dtype="<i2").astype(np.float32) / 32768.0
     elif sample_width == 3:
-        # 24-bit — unpack manually
-        vals = []
-        for i in range(0, len(raw), 3):
-            b0, b1, b2 = raw[i], raw[i + 1], raw[i + 2]
-            v = (b2 << 16) | (b1 << 8) | b0
-            if v & 0x800000:
-                v -= 0x1000000
-            vals.append(v)
-        data = np.array(vals, dtype=np.float32) / 8388608.0
+        b = np.frombuffer(raw, dtype=np.uint8).reshape(-1, 3).astype(np.int32)
+        v = b[:, 0] | (b[:, 1] << 8) | (b[:, 2] << 16)
+        data = (np.where(v & 0x800000, v - 0x1000000, v)).astype(np.float32) / 8388608.0
     elif sample_width == 4:
-        data = np.frombuffer(raw, dtype=np.float32)
-        if not np.all(np.isfinite(data)) or np.max(np.abs(data)) > 2.0:
-            data = np.frombuffer(raw, dtype=np.int32).astype(np.float32) / 2147483648.0
+        # float samples written under a PCM header are read as floats
+        data = np.frombuffer(raw, dtype="<f4")
+        if not np.all(np.isfinite(data)) or np.max(np.abs(data), initial=0.0) > 2.0:
+            data = np.frombuffer(raw, dtype="<i4").astype(np.float32) / 2147483648.0
     else:
         raise ValueError(f"Unsupported sample width: {sample_width} bytes")
 
