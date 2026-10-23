@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.0.3a1](https://github.com/TigreGotico/speakeronnx/tree/0.0.3a1) (2026-10-23)
+
+[Full Changelog](https://github.com/TigreGotico/speakeronnx/compare/0.0.2a3...0.0.3a1)
+
+**Merged pull requests:**
+
+- fix: read IEEE float WAV files [\#21](https://github.com/TigreGotico/speakeronnx/pull/21) ([openvoiceos-bot](https://github.com/openvoiceos-bot))
+
 ## [0.0.2a3](https://github.com/TigreGotico/speakeronnx/tree/0.0.2a3) (2026-09-17)
 
 [Full Changelog](https://github.com/TigreGotico/speakeronnx/compare/0.0.2a2...0.0.2a3)
