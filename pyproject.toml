@@ -25,7 +25,9 @@ dependencies = [
 soxr = ["soxr"]
 test = [
     "pytest",
-    "edge-tts",
+    "phoonnx>=1.91.0a1",
+    "espyak",
+    "ovos-plugin-manager",
     "requests",
 ]
 
