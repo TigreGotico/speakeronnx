@@ -44,8 +44,8 @@ version = {attr = "speakeronnx.version.__version__"}
 where = ["."]
 include = ["speakeronnx*"]
 
-[tool.setuptools.package-data]
-"speakeronnx" = ["**/*"]
+[tool.setuptools.exclude-package-data]
+"*" = ["__pycache__/*", "*.pyc"]
 
 [tool.mypy]
 python_version = "3.11"
