@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.0.5a1](https://github.com/TigreGotico/speakeronnx/tree/0.0.5a1) (2026-11-12)
+
+[Full Changelog](https://github.com/TigreGotico/speakeronnx/compare/0.0.3a1...0.0.5a1)
+
+**Merged pull requests:**
+
+- fix: give each model its window, normalisation, threshold and revision, and reject silence in verify [\#24](https://github.com/TigreGotico/speakeronnx/pull/24) ([JarbasAl](https://github.com/JarbasAl))
+- fix: ship only the speakeronnx package, floor Python at 3.11, and make the quickstart runnable [\#23](https://github.com/TigreGotico/speakeronnx/pull/23) ([JarbasAl](https://github.com/JarbasAl))
+
 ## [0.0.3a1](https://github.com/TigreGotico/speakeronnx/tree/0.0.3a1) (2026-10-23)
 
 [Full Changelog](https://github.com/TigreGotico/speakeronnx/compare/0.0.2a3...0.0.3a1)
