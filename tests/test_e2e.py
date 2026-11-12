@@ -68,10 +68,17 @@ _SPEAKER_SEP_MODELS = [
     "redimnet-b2",
     "titanet-small",
     "titanet-large",
+    "campplus-zh-en-v2",
+    "eres2net-v2",
+    "titanet-small-v2",
+    "titanet-large-v2",
 ]
 
 # All models (full parametrize for pipeline-only tests)
 _ALL_MODELS = sorted(_SPEAKER_SEP_MODELS + ["campplus"])
+
+# Aliases with a "-v2" successor: they keep the frontend of their stored embeddings
+_SUPERSEDED = {alias.removesuffix("-v2") for alias in _ALL_MODELS if alias.endswith("-v2")}
 
 
 @pytest.mark.parametrize("alias", _ALL_MODELS)
@@ -165,9 +172,12 @@ def test_two_silent_clips_fail_verify_with_the_real_model(alias, tmp_path):
     assert embedder.verify(a, b) == (False, 0.0)
 
 
-@pytest.mark.parametrize("alias", _ALL_MODELS)
+@pytest.mark.parametrize("alias", sorted(set(_ALL_MODELS) - _SUPERSEDED))
 def test_window_and_normalisation_agree_with_the_onnx_metadata(alias):
-    """The sherpa-onnx exports record their frontend; the entry must say the same."""
+    """The sherpa-onnx exports record their frontend; the entry must say the same.
+
+    An alias with a "-v2" successor keeps the frontend its stored embeddings came from.
+    """
     import onnxruntime as ort
     from speakeronnx import MODEL_REGISTRY
     entry = MODEL_REGISTRY[alias]

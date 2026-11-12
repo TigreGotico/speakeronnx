@@ -3,14 +3,17 @@
 ## Fbank80 (WeSpeaker-style)
 
 All models except `redimnet-b2` use 80-dim log-Mel filterbank features.
-Each `ModelEntry` names the analysis window and the normalisation of its
-training recipe:
+Each `ModelEntry` names its analysis window and normalisation:
 
 | Models | Window | Normalisation | Source |
 |---|---|---|---|
 | `wespeaker-*`, `campplus` | Hamming | `cmn` | WeSpeaker `wespeaker/dataset/processor.py`, `compute_fbank` |
-| `campplus-zh-en`, `eres2net` | Povey | `cmn` | 3D-Speaker `speakerlab/process/processor.py`, `FBank` |
-| `titanet-small`, `titanet-large` | Hann | `per_feature` | ONNX metadata `window_type` and `feature_normalize_type` |
+| `campplus-zh-en-v2`, `eres2net-v2` | Povey | `cmn` | 3D-Speaker `speakerlab/process/processor.py`, `FBank` |
+| `titanet-small-v2`, `titanet-large-v2` | Hann | `per_feature` | ONNX metadata `window_type` and `feature_normalize_type` |
+| `campplus-zh-en`, `eres2net`, `titanet-small`, `titanet-large` | Hamming | `cmn` | None: these aliases keep the frontend of their stored embeddings |
+
+An alias never changes its frontend, because stored embeddings must stay comparable.
+A corrected frontend ships under a new alias with a higher `frontend_revision`.
 
 The steps follow the Kaldi recipe in outline. The frontend has no parity test
 against Kaldi. Kaldi removes the DC offset and pre-emphasises each frame, and
@@ -68,6 +71,7 @@ Key design decisions:
 | `frame_shift_ms` | 10.0 | Frame shift / hop size |
 | `window` | `"hamming"` | `"hamming"`, `"hann"` or `"povey"` |
 | `normalisation` | `"cmn"` | `"cmn"`, `"per_feature"` or `None` |
+| `apply_cmn` | `None` | Deprecated: `True` means `normalisation="cmn"`, `False` means `normalisation=None` |
 | `low_freq` | 20 Hz | Lowest frequency for mel filterbank |
 | `high_freq` | 8000 Hz | Highest frequency (nyquist) |
 

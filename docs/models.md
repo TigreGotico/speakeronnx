@@ -1,6 +1,6 @@
 # Model guide
 
-`speakeronnx.MODEL_REGISTRY` registers 9 models. The library downloads each one
+`speakeronnx.MODEL_REGISTRY` registers 13 models. The library downloads each one
 automatically via `huggingface_hub` on first use.
 
 ## Choosing a model
@@ -29,11 +29,20 @@ automatically via `huggingface_hub` on first use.
 | `eres2net` | 192 | ~5M | Lightweight English-only, Apache-2.0. |
 | `titanet-small` | 192 | ~3M | TitaNet small, 40 MB on disk. |
 
+### Aliases with a `-v2` successor
+
+`campplus-zh-en-v2`, `eres2net-v2`, `titanet-small-v2` and `titanet-large-v2` use the
+same ONNX file as the alias without `-v2`, with the window and normalisation of the
+training recipe. Use the `-v2` alias for a new enrolment. The alias without `-v2`
+keeps its embeddings, so profiles enrolled with it still match. See
+[frontend.md](frontend.md).
+
 ## Frontend requirements
 
 ### `fbank80` models (all except redimnet-b2)
 
-These models expect 80-dim log-Mel filterbank features with per-utterance CMN.
+These models expect 80-dim log-Mel filterbank features with the window and
+normalisation that the model entry names.
 The library's `compute_fbank` function implements this in pure numpy.
 
 Processing flow:

@@ -53,6 +53,10 @@ The library downloads each model on first use into the shared HuggingFace cache
 | `titanet-small` | 192 | ~3M | fbank80 | cc-by-4.0 |
 | `titanet-large` | 192 | ~8M | fbank80 | cc-by-4.0 |
 | `redimnet-b2` | 192 | 1.8M | raw | apache-2.0 |
+| `campplus-zh-en-v2` | 192 | ~3M | fbank80 | apache-2.0 |
+| `eres2net-v2` | 192 | ~5M | fbank80 | apache-2.0 |
+| `titanet-small-v2` | 192 | ~3M | fbank80 | cc-by-4.0 |
+| `titanet-large-v2` | 192 | ~8M | fbank80 | cc-by-4.0 |
 
 See [models.md](models.md) for detailed model comparison and selection guidance.
 

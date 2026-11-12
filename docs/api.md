@@ -38,6 +38,7 @@ class ModelEntry:
     window: str = "hamming"         # "hamming", "hann" or "povey"
     normalisation: Optional[str] = "cmn"  # "cmn", "per_feature" or None
     threshold: float = 0.45
+    frontend_revision: int = 1
 ```
 
 | Field | Description |
@@ -60,6 +61,7 @@ class ModelEntry:
 | `window` | Fbank analysis window of the training recipe |
 | `normalisation` | Fbank normalisation of the training recipe |
 | `threshold` | Default cosine threshold of `SpeakerEmbedder.verify()` |
+| `frontend_revision` | Revision of `window` and `normalisation`. An alias keeps its value; a corrected frontend gets a new alias |
 
 #### `ModelEntry.download()`
 

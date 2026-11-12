@@ -12,12 +12,15 @@ from __future__ import annotations
 import math
 import struct
 import os
-from dataclasses import dataclass, field
+import warnings
+from dataclasses import dataclass, field, replace
 from typing import Dict, List, Optional, Tuple, Union
 
 import numpy as np
 import onnxruntime as ort
 from huggingface_hub import hf_hub_download
+
+from speakeronnx.version import VERSION_MAJOR
 
 # ---------------------------------------------------------------------------
 # Public data model
@@ -44,6 +47,9 @@ class ModelEntry:
     window: str = "hamming"         # "hamming", "hann" or "povey"
     normalisation: Optional[str] = "cmn"  # "cmn", "per_feature" or None
     threshold: float = 0.45         # cosine score at or above which verify accepts
+    # Revision of the window and normalisation. An alias keeps its frontend, so the
+    # embeddings stored under it stay comparable; a corrected frontend gets a new alias.
+    frontend_revision: int = 1
 
     def download(self) -> str:
         """Download the ONNX file via huggingface_hub into the shared HF cache."""
@@ -125,7 +131,6 @@ MODEL_REGISTRY: Dict[str, ModelEntry] = {
         hf_repo="csukuangfj/speaker-embedding-models",
         revision="0743f301363dec56491a490f6d6cbc9d67f9a3bf",
         hf_file="3dspeaker_speech_campplus_sv_zh_en_16k-common_advanced.onnx",
-        window="povey",
         license="apache-2.0",
         embed_dim=192,
         sample_rate=16000,
@@ -144,7 +149,6 @@ MODEL_REGISTRY: Dict[str, ModelEntry] = {
         hf_repo="csukuangfj/speaker-embedding-models",
         revision="0743f301363dec56491a490f6d6cbc9d67f9a3bf",
         hf_file="3dspeaker_speech_eres2net_sv_en_voxceleb_16k.onnx",
-        window="povey",
         license="apache-2.0",
         embed_dim=192,
         sample_rate=16000,
@@ -162,8 +166,6 @@ MODEL_REGISTRY: Dict[str, ModelEntry] = {
         hf_repo="csukuangfj/speaker-embedding-models",
         revision="0743f301363dec56491a490f6d6cbc9d67f9a3bf",
         hf_file="nemo_en_titanet_small.onnx",
-        window="hann",
-        normalisation="per_feature",
         license="cc-by-4.0",
         embed_dim=192,
         sample_rate=16000,
@@ -185,8 +187,6 @@ MODEL_REGISTRY: Dict[str, ModelEntry] = {
         hf_repo="csukuangfj/speaker-embedding-models",
         revision="0743f301363dec56491a490f6d6cbc9d67f9a3bf",
         hf_file="nemo_en_titanet_large.onnx",
-        window="hann",
-        normalisation="per_feature",
         license="cc-by-4.0",
         embed_dim=192,
         sample_rate=16000,
@@ -221,14 +221,31 @@ MODEL_REGISTRY: Dict[str, ModelEntry] = {
     ),
 }
 
-DEFAULT_MODEL = "wespeaker-resnet34"
-
 # Training recipes behind the window and normalisation of each entry:
 # WeSpeaker wespeaker/dataset/processor.py compute_fbank uses window_type='hamming'
 # and apply_cmvn subtracts the mean. 3D-Speaker speakerlab/process/processor.py FBank
 # calls Kaldi.fbank with the default Povey window and subtracts the mean. The NeMo
 # TitaNet files carry window_type='hann' and feature_normalize_type='per_feature'
 # in their ONNX metadata.
+# The "-v2" entries use the frontend of the recipe. The entries they copy keep the
+# Hamming window and mean subtraction, so the embeddings stored under them still match.
+MODEL_REGISTRY.update({
+    f"{alias}-v2": replace(
+        MODEL_REGISTRY[alias],
+        alias=f"{alias}-v2",
+        window=window,
+        normalisation=normalisation,
+        frontend_revision=2,
+    )
+    for alias, window, normalisation in (
+        ("campplus-zh-en", "povey", "cmn"),
+        ("eres2net", "povey", "cmn"),
+        ("titanet-small", "hann", "per_feature"),
+        ("titanet-large", "hann", "per_feature"),
+    )
+})
+
+DEFAULT_MODEL = "wespeaker-resnet34"
 
 # ---------------------------------------------------------------------------
 # Audio loading — a RIFF reader in numpy, no librosa/soundfile
@@ -392,6 +409,8 @@ _WINDOWS = {
     "povey": lambda n: np.hanning(n) ** 0.85,
 }
 
+_APPLY_CMN_REMOVAL = f"{VERSION_MAJOR + 1}.0.0"
+
 #: One step of 16-bit PCM. A clip whose peak stays below it is digital silence.
 SILENCE_PEAK = 1.0 / 32768.0
 
@@ -405,6 +424,8 @@ def compute_fbank(
     dither: float = 0.0,
     window: str = "hamming",
     normalisation: Optional[str] = "cmn",
+    *,
+    apply_cmn: Optional[bool] = None,
 ) -> np.ndarray:
     """Compute log-Mel filterbank features with optional normalisation.
 
@@ -429,12 +450,24 @@ def compute_fbank(
         ``"cmn"`` subtracts the mean of each bin over time. ``"per_feature"`` also
         divides by the standard deviation of each bin plus 1e-5, as NeMo does.
         ``None`` leaves the log energies as they are.
+    apply_cmn:
+        Deprecated. ``True`` means ``normalisation="cmn"`` and ``False`` means
+        ``normalisation=None``.
 
     Returns
     -------
     np.ndarray
         Shape ``(T, num_mel_bins)`` float32 feature matrix.
     """
+    if apply_cmn is not None:
+        warnings.warn(
+            "compute_fbank(apply_cmn=...) is deprecated and will be removed in "
+            f"speakeronnx {_APPLY_CMN_REMOVAL}; use normalisation='cmn' or normalisation=None",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        normalisation = "cmn" if apply_cmn else None
+
     frame_length = int(sample_rate * frame_length_ms / 1000)
     frame_shift = int(sample_rate * frame_shift_ms / 1000)
     n_fft = 1

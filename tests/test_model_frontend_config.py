@@ -11,6 +11,7 @@ import pytest
 
 from speakeronnx import MODEL_REGISTRY, SpeakerEmbedder, verify
 from speakeronnx.embedder import compute_fbank
+from speakeronnx.version import VERSION_MAJOR
 
 
 def _embedder(alias, output=None):
@@ -90,9 +91,14 @@ def test_unknown_normalisation_raises():
 
 @pytest.mark.parametrize("alias,window,normalisation", [
     ("wespeaker-resnet34", "hamming", "cmn"),
-    ("campplus-zh-en", "povey", "cmn"),
-    ("eres2net", "povey", "cmn"),
-    ("titanet-small", "hann", "per_feature"),
+    ("campplus-zh-en", "hamming", "cmn"),
+    ("eres2net", "hamming", "cmn"),
+    ("titanet-small", "hamming", "cmn"),
+    ("titanet-large", "hamming", "cmn"),
+    ("campplus-zh-en-v2", "povey", "cmn"),
+    ("eres2net-v2", "povey", "cmn"),
+    ("titanet-small-v2", "hann", "per_feature"),
+    ("titanet-large-v2", "hann", "per_feature"),
 ])
 def test_embed_feeds_the_features_of_the_model_entry(alias, window, normalisation):
     embedder = _embedder(alias)
@@ -101,6 +107,23 @@ def test_embed_feeds_the_features_of_the_model_entry(alias, window, normalisatio
     feed = embedder._session.run.call_args[0][1][embedder._input_name][0]
     expected = compute_fbank(audio, window=window, normalisation=normalisation)
     np.testing.assert_allclose(feed.T if MODEL_REGISTRY[alias].input_layout == "BFT" else feed, expected)
+
+
+@pytest.mark.parametrize("alias", ["campplus-zh-en", "eres2net", "titanet-small", "titanet-large"])
+def test_a_corrected_frontend_ships_under_a_new_alias(alias):
+    # Profiles stored under an alias hold its embeddings, so the alias keeps its frontend.
+    old, new = MODEL_REGISTRY[alias], MODEL_REGISTRY[f"{alias}-v2"]
+    assert (old.window, old.normalisation, old.frontend_revision) == ("hamming", "cmn", 1)
+    assert new.frontend_revision == 2
+    assert (new.hf_repo, new.hf_file, new.revision) == (old.hf_repo, old.hf_file, old.revision)
+
+
+@pytest.mark.parametrize("apply_cmn,normalisation", [(True, "cmn"), (False, None)])
+def test_apply_cmn_still_works_and_warns(apply_cmn, normalisation):
+    audio = _tone()
+    with pytest.warns(DeprecationWarning, match=rf"removed in speakeronnx {VERSION_MAJOR + 1}\.0\.0"):
+        feats = compute_fbank(audio, apply_cmn=apply_cmn)
+    np.testing.assert_array_equal(feats, compute_fbank(audio, normalisation=normalisation))
 
 
 # ------------------------------------------------------------------ #
