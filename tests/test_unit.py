@@ -100,7 +100,7 @@ class TestFbankFrontend(unittest.TestCase):
     def test_fbank_cmn_near_zero_mean(self):
         from speakeronnx.embedder import compute_fbank
         audio = self._make_audio(2.0)
-        feats = compute_fbank(audio, apply_cmn=True)
+        feats = compute_fbank(audio, normalisation="cmn")
         # Per-utterance CMN means the time-axis mean of each mel bin is ~0
         np.testing.assert_allclose(feats.mean(axis=0), 0.0, atol=1e-4)
 

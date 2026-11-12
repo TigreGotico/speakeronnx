@@ -31,7 +31,7 @@ If CUDA is unavailable, it falls back to CPU.
 
 ## Threshold tuning
 
-The default threshold of `0.45` is a starting point. The optimal threshold depends
+Every model entry has a `threshold` of `0.45`, and `SpeakerEmbedder.verify()` uses it by default. No model has a calibrated value. The value is a starting point. The optimal threshold depends
 on your data, your language, and the false-accept / false-reject trade-off you want.
 
 **To calibrate:**

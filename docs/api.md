@@ -34,6 +34,11 @@ class ModelEntry:
     output_index: int = 0
     extra_feeds: Optional[Dict[str, str]] = None
     description: str = ""
+    revision: Optional[str] = None  # Hugging Face commit
+    window: str = "hamming"         # "hamming", "hann" or "povey"
+    normalisation: Optional[str] = "cmn"  # "cmn", "per_feature" or None
+    threshold: float = 0.45
+    frontend_revision: int = 1
 ```
 
 | Field | Description |
@@ -52,6 +57,11 @@ class ModelEntry:
 | `output_index` | Which ONNX output is the embedding |
 | `extra_feeds` | Extra ONNX feeds (e.g. `{"length": "T"}` for TitaNet) |
 | `description` | Human-readable model summary |
+| `revision` | Hugging Face commit the download is pinned to |
+| `window` | Fbank analysis window of the training recipe |
+| `normalisation` | Fbank normalisation of the training recipe |
+| `threshold` | Default cosine threshold of `SpeakerEmbedder.verify()` |
+| `frontend_revision` | Revision of `window` and `normalisation`. An alias keeps its value; a corrected frontend gets a new alias |
 
 #### `ModelEntry.download()`
 
@@ -132,11 +142,12 @@ def verify(
     self,
     a: np.ndarray,
     b: np.ndarray,
-    threshold: float = 0.45,
+    threshold: Optional[float] = None,
 ) -> Tuple[bool, float]
 ```
 
-Instance-method shortcut for `speakeronnx.verify(a, b, threshold)`.
+Instance-method shortcut for `speakeronnx.verify(a, b, threshold)`. When
+`threshold` is `None`, it takes `threshold` from the model entry.
 
 ---
 
@@ -178,7 +189,9 @@ Verify whether two embeddings belong to the same speaker.
 **Returns:**
 
 - `(is_same_speaker, score)` - `is_same_speaker` is `True` when
-  `score >= threshold`.
+  `score >= threshold`. A zero vector on either side gives `(False, 0.0)`.
+  `embed()` returns the zero vector for digital silence, a clip whose peak
+  is below one 16-bit step, so two silent clips never verify.
 
 ---
 [← Model guide](models.md) · [Home](index.md) · [CLI reference →](cli.md)

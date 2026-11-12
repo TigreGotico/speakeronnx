@@ -20,9 +20,10 @@ def _cmd_verify(args: argparse.Namespace) -> None:
     embedder = SpeakerEmbedder(model=args.model)
     a = embedder.embed(args.wav_a)
     b = embedder.embed(args.wav_b)
-    accepted, score = embedder.verify(a, b, threshold=args.threshold)
+    threshold = embedder.threshold if args.threshold is None else args.threshold
+    accepted, score = embedder.verify(a, b, threshold=threshold)
     verdict = "SAME" if accepted else "DIFFERENT"
-    print(f"score={score:.6f}  threshold={args.threshold}  verdict={verdict}")
+    print(f"score={score:.6f}  threshold={threshold}  verdict={verdict}")
     sys.exit(0 if accepted else 1)
 
 
@@ -59,7 +60,8 @@ def main() -> None:
     p_verify.add_argument("wav_a")
     p_verify.add_argument("wav_b")
     p_verify.add_argument("--model", default="wespeaker-resnet34")
-    p_verify.add_argument("--threshold", type=float, default=0.45)
+    p_verify.add_argument("--threshold", type=float, default=None,
+                          help="cosine threshold (default: the threshold of the model entry)")
 
     # list
     sub.add_parser("list", help="List available models")

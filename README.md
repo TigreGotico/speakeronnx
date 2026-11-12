@@ -54,7 +54,7 @@ Full CLI reference in [`docs/cli.md`](docs/cli.md).
 
 ## Models
 
-The library registers 9 models in `MODEL_REGISTRY`. Each one downloads on first use:
+The library registers 13 models in `MODEL_REGISTRY`. Each one downloads on first use:
 
 | Alias | Embed dim | Frontend | License |
 |---|---|---|---|
@@ -67,6 +67,25 @@ The library registers 9 models in `MODEL_REGISTRY`. Each one downloads on first 
 | `titanet-small` | 192 | fbank80 | cc-by-4.0 |
 | `titanet-large` | 192 | fbank80 | cc-by-4.0 |
 | `redimnet-b2` | 192 | raw | apache-2.0 |
+| `campplus-zh-en-v2` | 192 | fbank80 | apache-2.0 |
+| `eres2net-v2` | 192 | fbank80 | apache-2.0 |
+| `titanet-small-v2` | 192 | fbank80 | cc-by-4.0 |
+| `titanet-large-v2` | 192 | fbank80 | cc-by-4.0 |
+
+### Aliases keep their embeddings
+
+An alias never changes the embeddings it gives. A stored profile, such as an enrolled speaker, stays valid for as long as you use the same alias.
+
+The `-v2` aliases use the same ONNX file with the window and normalisation of the training recipe. Use them for a new enrolment:
+
+| For a new enrolment, choose | Instead of | Frontend of the `-v2` alias |
+|---|---|---|
+| `campplus-zh-en-v2` | `campplus-zh-en` | Povey window, `cmn` |
+| `eres2net-v2` | `eres2net` | Povey window, `cmn` |
+| `titanet-small-v2` | `titanet-small` | Hann window, `per_feature` |
+| `titanet-large-v2` | `titanet-large` | Hann window, `per_feature` |
+
+The aliases without `-v2` keep the Hamming window and `cmn`, so profiles enrolled with them still match their speakers. Embeddings from an alias and its `-v2` alias are not comparable. To move a profile to a `-v2` alias, enrol the speaker again. `ModelEntry.frontend_revision` is 1 for the old frontend and 2 for the `-v2` frontend. A store can record it next to each profile.
 
 Full model comparison and selection guide in [`docs/models.md`](docs/models.md).
 
@@ -116,13 +135,14 @@ Each registered model has an HF source, license, and embedding dimension:
 | `titanet-small` | [csukuangfj/speaker-embedding-models](https://huggingface.co/csukuangfj/speaker-embedding-models) | cc-by-4.0 | 192 | NVIDIA NeMo TitaNet-small (~40 MB) |
 | `titanet-large` | [csukuangfj/speaker-embedding-models](https://huggingface.co/csukuangfj/speaker-embedding-models) | cc-by-4.0 | 192 | NVIDIA NeMo TitaNet-large (~101 MB) |
 | `redimnet-b2` | [OpenVoiceOS/redimnet-b2-vox2-onnx](https://huggingface.co/OpenVoiceOS/redimnet-b2-vox2-onnx) | apache-2.0 | 192 | ReDimNet b2 (1.8M params), raw audio input |
+| `campplus-zh-en-v2`, `eres2net-v2`, `titanet-small-v2`, `titanet-large-v2` | as the alias without `-v2` | as the alias without `-v2` | 192 | Same ONNX file, frontend of the training recipe |
 
 Run `speakeronnx list` to print descriptions and metadata for all registered models.
 
 ## Feature frontend
 
-- **fbank80** models use an 80-dim log-Mel filterbank with per-utterance CMN,
-  implemented in pure numpy. See [`docs/frontend.md`](docs/frontend.md).
+- **fbank80** models use an 80-dim log-Mel filterbank with the window and
+  normalisation that the model entry names, implemented in pure numpy. See [`docs/frontend.md`](docs/frontend.md).
 - **raw** models (redimnet-b2) pass the raw 16 kHz waveform directly
   to ONNX. The model has an internal MelSpectrogram.
 
