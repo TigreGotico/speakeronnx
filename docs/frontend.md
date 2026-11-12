@@ -2,9 +2,19 @@
 
 ## Fbank80 (WeSpeaker-style)
 
-All models except `redimnet-b2` use 80-dim log-Mel filterbank features
-with per-utterance cepstral mean normalization (CMN). This matches the
-WeSpeaker training pipeline exactly.
+All models except `redimnet-b2` use 80-dim log-Mel filterbank features.
+Each `ModelEntry` names the analysis window and the normalisation of its
+training recipe:
+
+| Models | Window | Normalisation | Source |
+|---|---|---|---|
+| `wespeaker-*`, `campplus` | Hamming | `cmn` | WeSpeaker `wespeaker/dataset/processor.py`, `compute_fbank` |
+| `campplus-zh-en`, `eres2net` | Povey | `cmn` | 3D-Speaker `speakerlab/process/processor.py`, `FBank` |
+| `titanet-small`, `titanet-large` | Hann | `per_feature` | ONNX metadata `window_type` and `feature_normalize_type` |
+
+The steps follow the Kaldi recipe in outline. The frontend has no parity test
+against Kaldi. Kaldi removes the DC offset and pre-emphasises each frame, and
+this frontend pre-emphasises the whole signal and keeps the DC offset.
 
 ### Processing steps
 
@@ -18,7 +28,7 @@ Pre-emphasis (0.97)
 Framing: 25 ms windows, 10 ms shift
         │
         ▼
-Hamming window
+Window (Hamming, Hann or Povey)
         │
         ▼
 FFT (power spectrum)
@@ -30,7 +40,8 @@ Mel filterbank (80 bins, 20-8000 Hz)
 Log(mel_power)
         │
         ▼
-Per-utterance CMN (subtract time-axis mean)
+Normalisation: cmn (subtract the time-axis mean),
+or per_feature (also divide by the time-axis standard deviation)
         │
         ▼
 Output: (T, 80) float32
@@ -44,8 +55,8 @@ Key design decisions:
 - **No librosa/soundfile** - zero external audio processing dependencies.
 - **Filterbank caching** - the mel filterbank matrix is computed once and
   cached per `(num_mel_bins, n_fft, sample_rate)` key.
-- **CMN at inference** - WeSpeaker eval pipeline uses per-utterance CMN,
-  not speaker-level or global statistics.
+- **Per-utterance statistics** - `cmn` and `per_feature` use the statistics
+  of the clip itself, not speaker-level or global statistics.
 - **Dither disabled** - `dither=0.0` during inference matches WeSpeaker eval.
 
 ### Parameters
@@ -55,6 +66,8 @@ Key design decisions:
 | `num_mel_bins` | 80 | Number of mel filterbank channels |
 | `frame_length_ms` | 25.0 | Frame length in milliseconds |
 | `frame_shift_ms` | 10.0 | Frame shift / hop size |
+| `window` | `"hamming"` | `"hamming"`, `"hann"` or `"povey"` |
+| `normalisation` | `"cmn"` | `"cmn"`, `"per_feature"` or `None` |
 | `low_freq` | 20 Hz | Lowest frequency for mel filterbank |
 | `high_freq` | 8000 Hz | Highest frequency (nyquist) |
 

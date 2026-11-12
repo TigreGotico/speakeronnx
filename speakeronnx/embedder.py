@@ -2,8 +2,9 @@
 
 No torch, no librosa, no soundfile at runtime.
 Audio loading: a RIFF reader in numpy (integer PCM and IEEE float WAV) + numpy resampling.
-Feature frontend: 80-dim log-Mel filterbank (Fbank) with cepstral mean
-normalisation (CMN) — matches the WeSpeaker training pipeline exactly.
+Feature frontend: 80-dim log-Mel filterbank (Fbank). Each model entry names the
+analysis window and the feature normalisation that its training recipe uses. The
+frontend follows the Kaldi recipe in outline. It has no parity test against Kaldi.
 """
 
 from __future__ import annotations
@@ -31,7 +32,7 @@ class ModelEntry:
     license: str
     embed_dim: int
     sample_rate: int
-    frontend: str          # "fbank80" (only supported value for now)
+    frontend: str          # "fbank80" (log-Mel filterbank) or "raw" (waveform)
     num_mel_bins: int = 80
     frame_length_ms: float = 25.0
     frame_shift_ms: float = 10.0
@@ -39,16 +40,21 @@ class ModelEntry:
     output_index: int = 0            # which output contains the embedding
     extra_feeds: Optional[Dict[str, str]] = None  # extra ONNX feed entries, "T" = frame count
     description: str = ""
+    revision: Optional[str] = None  # Hugging Face commit; None takes the head of main
+    window: str = "hamming"         # "hamming", "hann" or "povey"
+    normalisation: Optional[str] = "cmn"  # "cmn", "per_feature" or None
+    threshold: float = 0.45         # cosine score at or above which verify accepts
 
     def download(self) -> str:
         """Download the ONNX file via huggingface_hub into the shared HF cache."""
-        return hf_hub_download(repo_id=self.hf_repo, filename=self.hf_file)
+        return hf_hub_download(repo_id=self.hf_repo, filename=self.hf_file, revision=self.revision)
 
 
 MODEL_REGISTRY: Dict[str, ModelEntry] = {
     "wespeaker-resnet34": ModelEntry(
         alias="wespeaker-resnet34",
         hf_repo="Wespeaker/wespeaker-voxceleb-resnet34-LM",
+        revision="f0c48c298fd835726c27956a5d617bad7115627e",
         hf_file="voxceleb_resnet34_LM.onnx",
         license="cc-by-4.0",
         embed_dim=256,
@@ -63,6 +69,7 @@ MODEL_REGISTRY: Dict[str, ModelEntry] = {
     "wespeaker-ecapa512": ModelEntry(
         alias="wespeaker-ecapa512",
         hf_repo="Wespeaker/wespeaker-ecapa-tdnn512-LM",
+        revision="a2f3dcb1c8702caccc7a55ceb57f5e8d1842112b",
         hf_file="voxceleb_ECAPA512_LM.onnx",
         license="cc-by-4.0",
         embed_dim=192,
@@ -80,6 +87,7 @@ MODEL_REGISTRY: Dict[str, ModelEntry] = {
     "wespeaker-resnet293": ModelEntry(
         alias="wespeaker-resnet293",
         hf_repo="Wespeaker/wespeaker-voxceleb-resnet293-LM",
+        revision="6e6bffe5bf3d772a1f143dc6dbfea58a0799ea83",
         hf_file="voxceleb_resnet293_LM.onnx",
         license="cc-by-4.0",
         embed_dim=256,
@@ -97,6 +105,7 @@ MODEL_REGISTRY: Dict[str, ModelEntry] = {
     "campplus": ModelEntry(
         alias="campplus",
         hf_repo="csukuangfj/speaker-embedding-models",
+        revision="0743f301363dec56491a490f6d6cbc9d67f9a3bf",
         hf_file="wespeaker_en_voxceleb_CAM++_LM.onnx",
         license="cc-by-4.0",
         embed_dim=512,
@@ -114,7 +123,9 @@ MODEL_REGISTRY: Dict[str, ModelEntry] = {
     "campplus-zh-en": ModelEntry(
         alias="campplus-zh-en",
         hf_repo="csukuangfj/speaker-embedding-models",
+        revision="0743f301363dec56491a490f6d6cbc9d67f9a3bf",
         hf_file="3dspeaker_speech_campplus_sv_zh_en_16k-common_advanced.onnx",
+        window="povey",
         license="apache-2.0",
         embed_dim=192,
         sample_rate=16000,
@@ -131,7 +142,9 @@ MODEL_REGISTRY: Dict[str, ModelEntry] = {
     "eres2net": ModelEntry(
         alias="eres2net",
         hf_repo="csukuangfj/speaker-embedding-models",
+        revision="0743f301363dec56491a490f6d6cbc9d67f9a3bf",
         hf_file="3dspeaker_speech_eres2net_sv_en_voxceleb_16k.onnx",
+        window="povey",
         license="apache-2.0",
         embed_dim=192,
         sample_rate=16000,
@@ -147,7 +160,10 @@ MODEL_REGISTRY: Dict[str, ModelEntry] = {
     "titanet-small": ModelEntry(
         alias="titanet-small",
         hf_repo="csukuangfj/speaker-embedding-models",
+        revision="0743f301363dec56491a490f6d6cbc9d67f9a3bf",
         hf_file="nemo_en_titanet_small.onnx",
+        window="hann",
+        normalisation="per_feature",
         license="cc-by-4.0",
         embed_dim=192,
         sample_rate=16000,
@@ -167,7 +183,10 @@ MODEL_REGISTRY: Dict[str, ModelEntry] = {
     "titanet-large": ModelEntry(
         alias="titanet-large",
         hf_repo="csukuangfj/speaker-embedding-models",
+        revision="0743f301363dec56491a490f6d6cbc9d67f9a3bf",
         hf_file="nemo_en_titanet_large.onnx",
+        window="hann",
+        normalisation="per_feature",
         license="cc-by-4.0",
         embed_dim=192,
         sample_rate=16000,
@@ -187,6 +206,7 @@ MODEL_REGISTRY: Dict[str, ModelEntry] = {
     "redimnet-b2": ModelEntry(
         alias="redimnet-b2",
         hf_repo="OpenVoiceOS/redimnet-b2-vox2-onnx",
+        revision="5127cc45350579cafea037f82634c2be04ca712d",
         hf_file="redimnet_b2_vox2.onnx",
         license="apache-2.0",
         embed_dim=192,
@@ -202,6 +222,13 @@ MODEL_REGISTRY: Dict[str, ModelEntry] = {
 }
 
 DEFAULT_MODEL = "wespeaker-resnet34"
+
+# Training recipes behind the window and normalisation of each entry:
+# WeSpeaker wespeaker/dataset/processor.py compute_fbank uses window_type='hamming'
+# and apply_cmvn subtracts the mean. 3D-Speaker speakerlab/process/processor.py FBank
+# calls Kaldi.fbank with the default Povey window and subtracts the mean. The NeMo
+# TitaNet files carry window_type='hann' and feature_normalize_type='per_feature'
+# in their ONNX metadata.
 
 # ---------------------------------------------------------------------------
 # Audio loading — a RIFF reader in numpy, no librosa/soundfile
@@ -359,6 +386,15 @@ def _mel_filterbank(
 # Cache filterbanks to avoid recomputation
 _FBANK_CACHE: Dict[Tuple, np.ndarray] = {}
 
+_WINDOWS = {
+    "hamming": np.hamming,
+    "hann": np.hanning,
+    "povey": lambda n: np.hanning(n) ** 0.85,
+}
+
+#: One step of 16-bit PCM. A clip whose peak stays below it is digital silence.
+SILENCE_PEAK = 1.0 / 32768.0
+
 
 def compute_fbank(
     audio: np.ndarray,
@@ -367,9 +403,10 @@ def compute_fbank(
     frame_length_ms: float = 25.0,
     frame_shift_ms: float = 10.0,
     dither: float = 0.0,
-    apply_cmn: bool = True,
+    window: str = "hamming",
+    normalisation: Optional[str] = "cmn",
 ) -> np.ndarray:
-    """Compute 80-dim log-Mel filterbank features with optional CMN.
+    """Compute log-Mel filterbank features with optional normalisation.
 
     Parameters
     ----------
@@ -385,9 +422,13 @@ def compute_fbank(
         Frame shift / hop size in milliseconds.
     dither:
         Amount of dithering noise (0.0 = disabled, matches WeSpeaker eval).
-    apply_cmn:
-        Apply cepstral mean normalisation per utterance (subtracts mean
-        across time axis). WeSpeaker uses per-utterance CMN at inference.
+    window:
+        Analysis window: ``"hamming"``, ``"hann"``, or ``"povey"`` (the Kaldi
+        default, a Hann window raised to the power 0.85).
+    normalisation:
+        ``"cmn"`` subtracts the mean of each bin over time. ``"per_feature"`` also
+        divides by the standard deviation of each bin plus 1e-5, as NeMo does.
+        ``None`` leaves the log energies as they are.
 
     Returns
     -------
@@ -426,9 +467,7 @@ def compute_fbank(
         strides=(audio.strides[0] * frame_shift, audio.strides[0]),
     ).copy()
 
-    # Hamming window
-    window = np.hamming(frame_length).astype(np.float32)
-    frames *= window
+    frames *= _WINDOWS[window](frame_length).astype(np.float32)
 
     # Power spectrum
     mag = np.abs(np.fft.rfft(frames, n=n_fft)).astype(np.float32)
@@ -441,11 +480,15 @@ def compute_fbank(
     mel_power = np.maximum(mel_power, 1e-10)
     log_mel = np.log(mel_power).astype(np.float32)
 
-    # Per-utterance cepstral mean normalisation (subtract time-axis mean)
-    if apply_cmn:
+    if normalisation == "cmn":
         log_mel -= log_mel.mean(axis=0, keepdims=True)
+    elif normalisation == "per_feature":
+        x = log_mel.astype(np.float64)
+        log_mel = (x - x.mean(axis=0, keepdims=True)) / (x.std(axis=0, ddof=1, keepdims=True) + 1e-5)
+    elif normalisation is not None:
+        raise ValueError(f"Unknown normalisation: {normalisation!r}")
 
-    return log_mel
+    return log_mel.astype(np.float32)
 
 
 # ---------------------------------------------------------------------------
@@ -481,8 +524,11 @@ def verify(
     Returns
     -------
     (is_same_speaker, score):
-        ``is_same_speaker`` is True when ``score >= threshold``.
+        ``is_same_speaker`` is True when ``score >= threshold``. A zero vector
+        on either side gives ``(False, 0.0)`` for every threshold.
     """
+    if not (np.any(a) and np.any(b)):
+        return False, 0.0  # the zero vector is the embedding of silence
     score = cosine(a, b)
     return score >= threshold, score
 
@@ -558,7 +604,9 @@ class SpeakerEmbedder:
         Returns
         -------
         np.ndarray
-            L2-normalised 1-D float32 embedding vector.
+            L2-normalised 1-D float32 embedding vector. Digital silence, a clip
+            whose peak is below one 16-bit step, gives the zero vector, which
+            :func:`verify` matches to no speaker.
         """
         audio = load_audio(source, target_sr=self.sample_rate)
 
@@ -574,7 +622,8 @@ class SpeakerEmbedder:
                 frame_length_ms=frame_length_ms,
                 frame_shift_ms=frame_shift_ms,
                 dither=0.0,
-                apply_cmn=True,
+                window=entry.window if entry else "hamming",
+                normalisation=entry.normalisation if entry else "cmn",
             )
         elif entry.frontend == "raw":
             feats = audio  # pass raw waveform directly
@@ -600,6 +649,8 @@ class SpeakerEmbedder:
 
         out = self._session.run([self._output_name], feed_dict)
         emb = out[0].ravel().astype(np.float32)
+        if np.max(np.abs(audio), initial=0.0) < SILENCE_PEAK:
+            return np.zeros_like(emb)
 
         # L2 normalise
         norm = np.linalg.norm(emb)
@@ -611,11 +662,19 @@ class SpeakerEmbedder:
         """Cosine similarity between two embeddings (instance method shortcut)."""
         return cosine(a, b)
 
+    @property
+    def threshold(self) -> float:
+        """Default cosine threshold of :meth:`verify` for this model."""
+        return self._entry.threshold if self._entry else 0.45
+
     def verify(
         self,
         a: np.ndarray,
         b: np.ndarray,
-        threshold: float = 0.45,
+        threshold: Optional[float] = None,
     ) -> Tuple[bool, float]:
-        """Verify whether two embeddings are from the same speaker."""
-        return verify(a, b, threshold=threshold)
+        """Verify whether two embeddings are from the same speaker.
+
+        ``threshold`` defaults to :attr:`threshold`, the value of the model entry.
+        """
+        return verify(a, b, threshold=self.threshold if threshold is None else threshold)

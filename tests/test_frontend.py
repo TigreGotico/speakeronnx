@@ -42,13 +42,13 @@ class TestFbankFrontend(unittest.TestCase):
     def test_cmn_produces_zero_mean(self):
         from speakeronnx.embedder import compute_fbank
         audio = _sine_wave(2.0)
-        feats = compute_fbank(audio, apply_cmn=True)
+        feats = compute_fbank(audio, normalisation="cmn")
         np.testing.assert_allclose(feats.mean(axis=0), 0.0, atol=1e-4)
 
     def test_no_cmn_preserves_mean(self):
         from speakeronnx.embedder import compute_fbank
         audio = _sine_wave(2.0)
-        feats = compute_fbank(audio, apply_cmn=False)
+        feats = compute_fbank(audio, normalisation=None)
         # Without CMN, mean should NOT be near zero
         self.assertGreater(np.abs(feats.mean()).item(), 1e-4)
 
@@ -69,7 +69,7 @@ class TestFbankFrontend(unittest.TestCase):
     def test_silence_gives_low_energy(self):
         from speakeronnx.embedder import compute_fbank
         audio = np.zeros(16000, dtype=np.float32)
-        feats = compute_fbank(audio, apply_cmn=True)
+        feats = compute_fbank(audio, normalisation="cmn")
         # Silence with CMN → zero-mean but non-zero variance
         # The values should be very negative log-energies
         self.assertTrue(np.all(np.isfinite(feats)))
