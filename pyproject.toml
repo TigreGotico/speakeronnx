@@ -25,7 +25,7 @@ dependencies = [
 soxr = ["soxr"]
 test = [
     "pytest",
-    "phoonnx>=1.91.0a1",
+    "phoonnx[espeak]>=1.91.0a1",
     "espyak",
     "ovos-plugin-manager",
     "requests",
