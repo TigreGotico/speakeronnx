@@ -10,8 +10,8 @@ automatically via `huggingface_hub` on first use.
 | Model | Dim | Params | Notes |
 |---|---|---|---|
 | `wespeaker-resnet293` | 256 | 28.6M | Highest accuracy WeSpeaker model. ResNet293 r-vector, large-margin finetuned. |
-| `campplus` | 512 | ~6M | High-dim embedding. D-TDNN with multi-granularity pooling. Best when dim matters. |
-| `titanet-large` | 192 | ~8M | NVIDIA NeMo large capacity. |
+| `campplus` | 512 | not stated | High-dim embedding. D-TDNN with multi-granularity pooling. Best when dim matters. |
+| `titanet-large` | 192 | not stated | NVIDIA NeMo large capacity. |
 
 ### Best accuracy-to-size ratio
 
@@ -19,15 +19,15 @@ automatically via `huggingface_hub` on first use.
 |---|---|---|---|
 | `redimnet-b2` | 192 | 1.8M | Interspeech 2024. tiny yet competitive. Raw audio input. |
 | `wespeaker-resnet34` | 256 | 6.6M | Default model. Solid all-rounder. |
-| `campplus-zh-en` | 192 | ~5M | Multilingual (zh+en), Apache-2.0. |
+| `campplus-zh-en` | 192 | not stated | Multilingual (zh+en), Apache-2.0. |
 
 ### Lightweight / fastest
 
 | Model | Dim | Params | Notes |
 |---|---|---|---|
 | `wespeaker-ecapa512` | 192 | 6.2M | ECAPA-TDNN, fast inference. |
-| `eres2net` | 192 | ~5M | Lightweight English-only, Apache-2.0. |
-| `titanet-small` | 192 | ~3M | TitaNet small, 40 MB on disk. |
+| `eres2net` | 192 | not stated | Lightweight English-only, Apache-2.0. |
+| `titanet-small` | 192 | not stated | TitaNet small, 40 MB on disk. |
 
 ### Aliases with a `-v2` successor
 
