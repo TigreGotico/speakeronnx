@@ -47,16 +47,16 @@ The library downloads each model on first use into the shared HuggingFace cache
 | `wespeaker-resnet34` | 256 | 6.6M | fbank80 | cc-by-4.0 |
 | `wespeaker-ecapa512` | 192 | 6.2M | fbank80 | cc-by-4.0 |
 | `wespeaker-resnet293` | 256 | 28.6M | fbank80 | cc-by-4.0 |
-| `campplus` | 512 | ~6M | fbank80 | cc-by-4.0 |
-| `campplus-zh-en` | 192 | ~3M | fbank80 | apache-2.0 |
-| `eres2net` | 192 | ~5M | fbank80 | apache-2.0 |
-| `titanet-small` | 192 | ~3M | fbank80 | cc-by-4.0 |
-| `titanet-large` | 192 | ~8M | fbank80 | cc-by-4.0 |
+| `campplus` | 512 | not stated | fbank80 | cc-by-4.0 |
+| `campplus-zh-en` | 192 | not stated | fbank80 | apache-2.0 |
+| `eres2net` | 192 | not stated | fbank80 | apache-2.0 |
+| `titanet-small` | 192 | not stated | fbank80 | cc-by-4.0 |
+| `titanet-large` | 192 | not stated | fbank80 | cc-by-4.0 |
 | `redimnet-b2` | 192 | 1.8M | raw | apache-2.0 |
-| `campplus-zh-en-v2` | 192 | ~3M | fbank80 | apache-2.0 |
-| `eres2net-v2` | 192 | ~5M | fbank80 | apache-2.0 |
-| `titanet-small-v2` | 192 | ~3M | fbank80 | cc-by-4.0 |
-| `titanet-large-v2` | 192 | ~8M | fbank80 | cc-by-4.0 |
+| `campplus-zh-en-v2` | 192 | not stated | fbank80 | apache-2.0 |
+| `eres2net-v2` | 192 | not stated | fbank80 | apache-2.0 |
+| `titanet-small-v2` | 192 | not stated | fbank80 | cc-by-4.0 |
+| `titanet-large-v2` | 192 | not stated | fbank80 | cc-by-4.0 |
 
 See [models.md](models.md) for detailed model comparison and selection guidance.
 
