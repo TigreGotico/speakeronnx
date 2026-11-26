@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.0.5a3](https://github.com/TigreGotico/speakeronnx/tree/0.0.5a3) (2026-11-26)
+
+[Full Changelog](https://github.com/TigreGotico/speakeronnx/compare/0.0.5a2...0.0.5a3)
+
+**Merged pull requests:**
+
+- test: the docs model tables match MODEL\_REGISTRY [\#27](https://github.com/TigreGotico/speakeronnx/pull/27) ([openvoiceos-bot](https://github.com/openvoiceos-bot))
+
 ## [0.0.5a2](https://github.com/TigreGotico/speakeronnx/tree/0.0.5a2) (2026-11-26)
 
 [Full Changelog](https://github.com/TigreGotico/speakeronnx/compare/0.0.5a1...0.0.5a2)
@@ -7,7 +15,6 @@
 **Merged pull requests:**
 
 - test: the test extra installs phoonnx\[espeak\] [\#28](https://github.com/TigreGotico/speakeronnx/pull/28) ([openvoiceos-bot](https://github.com/openvoiceos-bot))
-- test: the docs model tables match MODEL\_REGISTRY [\#27](https://github.com/TigreGotico/speakeronnx/pull/27) ([openvoiceos-bot](https://github.com/openvoiceos-bot))
 
 ## [0.0.5a1](https://github.com/TigreGotico/speakeronnx/tree/0.0.5a1) (2026-11-12)
 
