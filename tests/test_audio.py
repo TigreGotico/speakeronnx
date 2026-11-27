@@ -193,6 +193,48 @@ class TestLoadAudio(unittest.TestCase):
         with self.assertRaises(ValueError):
             _load_wav(path)
 
+    # --- IEEE float and format tags ---
+
+    def test_float32_wav(self):
+        from speakeronnx.embedder import load_audio
+        path = self._path("f32.wav")
+        x = (0.5 * np.sin(2 * np.pi * 440 * np.arange(1600) / 16000)).astype("<f4")
+        _write_raw_wav(path, x.tobytes(), format_tag=3, bits=32)
+        np.testing.assert_allclose(load_audio(path, target_sr=16000), x, atol=1e-7)
+
+    def test_float64_wav(self):
+        from speakeronnx.embedder import load_audio
+        path = self._path("f64.wav")
+        x = 0.25 * np.cos(2 * np.pi * 220 * np.arange(1600) / 16000)
+        _write_raw_wav(path, x.astype("<f8").tobytes(), format_tag=3, bits=64)
+        np.testing.assert_allclose(load_audio(path, target_sr=16000), x.astype(np.float32), atol=1e-7)
+
+    def test_extensible_float32_wav(self):
+        from speakeronnx.embedder import load_audio
+        path = self._path("f32x.wav")
+        x = np.linspace(-0.9, 0.9, 1600, dtype="<f4")
+        _write_raw_wav(path, x.tobytes(), format_tag=3, bits=32, extensible=True)
+        np.testing.assert_allclose(load_audio(path, target_sr=16000), x, atol=1e-7)
+
+    def test_unknown_format_tag_raises(self):
+        from speakeronnx.embedder import _load_wav
+        path = self._path("alaw.wav")
+        _write_raw_wav(path, b"\x00" * 100, format_tag=6, bits=8)
+        with self.assertRaises(ValueError):
+            _load_wav(path)
+
+    def test_chunk_before_fmt_is_skipped(self):
+        from speakeronnx.embedder import load_audio
+        path = self._path("list.wav")
+        x = (np.arange(1600) % 100 - 50).astype("<i2")
+        _write_raw_wav(path, x.tobytes(), format_tag=1, bits=16)
+        raw = open(path, "rb").read()
+        extra = b"LIST" + struct.pack("<I", 5) + b"abcde\x00"
+        body = raw[8:12] + extra + raw[12:]
+        with open(path, "wb") as f:
+            f.write(b"RIFF" + struct.pack("<I", len(body)) + body)
+        np.testing.assert_allclose(load_audio(path, target_sr=16000), x.astype(np.float32) / 32768.0)
+
     def test_silence_returns_zeros(self):
         from speakeronnx.embedder import load_audio
         path = self._path("silence.wav")
