@@ -335,15 +335,20 @@ def _resample_numpy(audio: np.ndarray, orig_sr: int, target_sr: int) -> np.ndarr
 def load_audio(
     source: Union[str, np.ndarray],
     target_sr: int = 16000,
+    sample_rate: Optional[int] = None,
 ) -> np.ndarray:
     """Load audio from a file path or accept a pre-loaded float32 numpy array.
 
     Parameters
     ----------
     source:
-        Path to a WAV file, or a float32 numpy array already at *target_sr*.
+        Path to a WAV file, or a 1-D numpy array at *sample_rate*.
     target_sr:
         Desired sample rate in Hz (model's expected rate).
+    sample_rate:
+        Sample rate of an array *source*. A WAV file carries its own rate.
+        An array without it raises DeprecationWarning and is taken to be at
+        *target_sr*; a later release raises ValueError.
 
     Returns
     -------
@@ -351,7 +356,16 @@ def load_audio(
         1-D float32 array, sample rate == target_sr.
     """
     if isinstance(source, np.ndarray):
-        return source.astype(np.float32)
+        audio = source.astype(np.float32)
+        if sample_rate is None:
+            warnings.warn(
+                "an array input without sample_rate= is taken to be at "
+                f"{target_sr} Hz; pass sample_rate= explicitly",
+                DeprecationWarning,
+                stacklevel=3,
+            )
+            return audio
+        return _resample_numpy(audio, sample_rate, target_sr)
     audio, sr = _load_wav(source)
     if sr != target_sr:
         audio = _resample_numpy(audio, sr, target_sr)
@@ -625,14 +639,18 @@ class SpeakerEmbedder:
             return self._entry.embed_dim
         return None
 
-    def embed(self, source: Union[str, np.ndarray]) -> np.ndarray:
+    def embed(
+        self, source: Union[str, np.ndarray], sample_rate: Optional[int] = None
+    ) -> np.ndarray:
         """Extract a speaker embedding vector.
 
         Parameters
         ----------
         source:
-            Path to a WAV file, or a float32 numpy array at the model's
-            expected sample rate (:attr:`sample_rate`).
+            Path to a WAV file, or a 1-D numpy array.
+        sample_rate:
+            Sample rate of an array *source*; the array is resampled to
+            :attr:`sample_rate`. Ignored for a WAV file.
 
         Returns
         -------
@@ -641,7 +659,7 @@ class SpeakerEmbedder:
             whose peak is below one 16-bit step, gives the zero vector, which
             :func:`verify` matches to no speaker.
         """
-        audio = load_audio(source, target_sr=self.sample_rate)
+        audio = load_audio(source, target_sr=self.sample_rate, sample_rate=sample_rate)
 
         entry = self._entry
         if entry is None or entry.frontend == "fbank80":
