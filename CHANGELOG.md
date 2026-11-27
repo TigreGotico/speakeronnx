@@ -1,8 +1,8 @@
 # Changelog
 
-## [0.0.7a1](https://github.com/TigreGotico/speakeronnx/tree/0.0.7a1) (2026-11-27)
+## [0.0.7a2](https://github.com/TigreGotico/speakeronnx/tree/0.0.7a2) (2026-11-27)
 
-[Full Changelog](https://github.com/TigreGotico/speakeronnx/compare/0.0.6a1...0.0.7a1)
+[Full Changelog](https://github.com/TigreGotico/speakeronnx/compare/0.0.6a1...0.0.7a2)
 
 **Merged pull requests:**
 
