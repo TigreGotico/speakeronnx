@@ -36,17 +36,10 @@ VOICE_B = "piper/en_US-joe-medium"
 VOICE_C = "piper/en_GB-alan-medium"
 
 
-def _skip_if_no_tts():
-    try:
-        from phoonnx.opm import PhoonnxTTSPlugin  # noqa: F401
-    except ImportError:
-        pytest.skip("phoonnx not available")
-
 
 @pytest.fixture(scope="module")
 def audio_dir(tmp_path_factory):
     """Generate all test audio clips once per module via phoonnx."""
-    _skip_if_no_tts()
     from phoonnx.opm import PhoonnxTTSPlugin
     tts = PhoonnxTTSPlugin()
     d = tmp_path_factory.mktemp("audio")
@@ -75,10 +68,17 @@ _SPEAKER_SEP_MODELS = [
     "redimnet-b2",
     "titanet-small",
     "titanet-large",
+    "campplus-zh-en-v2",
+    "eres2net-v2",
+    "titanet-small-v2",
+    "titanet-large-v2",
 ]
 
 # All models (full parametrize for pipeline-only tests)
 _ALL_MODELS = sorted(_SPEAKER_SEP_MODELS + ["campplus"])
+
+# Aliases with a "-v2" successor: they keep the frontend of their stored embeddings
+_SUPERSEDED = {alias.removesuffix("-v2") for alias in _ALL_MODELS if alias.endswith("-v2")}
 
 
 @pytest.mark.parametrize("alias", _ALL_MODELS)
@@ -151,3 +151,38 @@ class TestE2ESpeakerSeparation:
         assert same > cross, (
             f"[{alias}] same={same:.4f} should be > cross={cross:.4f}"
         )
+
+
+def _write_silence(path, seconds=2.0):
+    import wave
+    with wave.open(str(path), "wb") as wf:
+        wf.setnchannels(1)
+        wf.setsampwidth(2)
+        wf.setframerate(16000)
+        wf.writeframes(b"\x00\x00" * int(16000 * seconds))
+    return str(path)
+
+
+@pytest.mark.parametrize("alias", _ALL_MODELS)
+def test_two_silent_clips_fail_verify_with_the_real_model(alias, tmp_path):
+    from speakeronnx import SpeakerEmbedder
+    embedder = SpeakerEmbedder(model=alias)
+    a = embedder.embed(_write_silence(tmp_path / "a.wav"))
+    b = embedder.embed(_write_silence(tmp_path / "b.wav", seconds=3.0))
+    assert embedder.verify(a, b) == (False, 0.0)
+
+
+@pytest.mark.parametrize("alias", sorted(set(_ALL_MODELS) - _SUPERSEDED))
+def test_window_and_normalisation_agree_with_the_onnx_metadata(alias):
+    """The sherpa-onnx exports record their frontend; the entry must say the same.
+
+    An alias with a "-v2" successor keeps the frontend its stored embeddings came from.
+    """
+    import onnxruntime as ort
+    from speakeronnx import MODEL_REGISTRY
+    entry = MODEL_REGISTRY[alias]
+    meta = ort.InferenceSession(entry.download(), providers=["CPUExecutionProvider"]).get_modelmeta().custom_metadata_map
+    if "window_type" in meta:
+        assert entry.window == meta["window_type"]
+    if "feature_normalize_type" in meta:
+        assert entry.normalisation == {"global-mean": "cmn", "per_feature": "per_feature"}[meta["feature_normalize_type"]]

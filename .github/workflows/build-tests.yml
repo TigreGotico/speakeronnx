@@ -5,10 +5,14 @@ on:
     branches: [dev, master, main]
   workflow_dispatch:
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
   build:
     uses: OpenVoiceOS/gh-automations/.github/workflows/build-tests.yml@dev
     with:
-      python_versions: '["3.10", "3.11", "3.12", "3.13", "3.14"]'
+      python_versions: '["3.11", "3.12", "3.13", "3.14"]'
       install_extras: 'test'
       test_path: 'tests'

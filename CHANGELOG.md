@@ -1,15 +1,94 @@
 # Changelog
 
-## [0.0.1a2](https://github.com/TigreGotico/speakeronnx/tree/0.0.1a2) (2026-06-13)
+## [0.0.7a3](https://github.com/TigreGotico/speakeronnx/tree/0.0.7a3) (2026-11-27)
 
-[Full Changelog](https://github.com/TigreGotico/speakeronnx/compare/a4476575e2ac793350858d035368a6f5e5ee9bdb...0.0.1a2)
+[Full Changelog](https://github.com/TigreGotico/speakeronnx/compare/0.0.7a2...0.0.7a3)
 
 **Merged pull requests:**
 
-- Move version.py into package dir; replace workflows with shared gh-automations callers [\#10](https://github.com/TigreGotico/speakeronnx/pull/10) ([JarbasAl](https://github.com/JarbasAl))
-- refactor: type fix, mypy config, expanded model table, edge-case tests [\#8](https://github.com/TigreGotico/speakeronnx/pull/8) ([JarbasAl](https://github.com/JarbasAl))
-- feat: add CAM++, ERes2Net, ResNet293, TitaNet, ReDimNet + docs, examples, expanded tests [\#7](https://github.com/TigreGotico/speakeronnx/pull/7) ([JarbasAl](https://github.com/JarbasAl))
-- feat: speakeronnx core [\#1](https://github.com/TigreGotico/speakeronnx/pull/1) ([JarbasAl](https://github.com/JarbasAl))
+- test: family input and pinning contract [\#35](https://github.com/TigreGotico/speakeronnx/pull/35) ([openvoiceos-bot](https://github.com/openvoiceos-bot))
+
+## [0.0.7a2](https://github.com/TigreGotico/speakeronnx/tree/0.0.7a2) (2026-11-27)
+
+[Full Changelog](https://github.com/TigreGotico/speakeronnx/compare/0.0.7a1...0.0.7a2)
+
+## [0.0.7a1](https://github.com/TigreGotico/speakeronnx/tree/0.0.7a1) (2026-11-27)
+
+[Full Changelog](https://github.com/TigreGotico/speakeronnx/compare/0.0.6a1...0.0.7a1)
+
+**Merged pull requests:**
+
+- ci: cancel superseded pull request runs [\#34](https://github.com/TigreGotico/speakeronnx/pull/34) ([openvoiceos-bot](https://github.com/openvoiceos-bot))
+- fix: take a sample rate with an array input [\#32](https://github.com/TigreGotico/speakeronnx/pull/32) ([openvoiceos-bot](https://github.com/openvoiceos-bot))
+
+## [0.0.6a1](https://github.com/TigreGotico/speakeronnx/tree/0.0.6a1) (2026-11-27)
+
+[Full Changelog](https://github.com/TigreGotico/speakeronnx/compare/0.0.5a3...0.0.6a1)
+
+**Merged pull requests:**
+
+- test: float, extensible and LIST-chunk WAV files [\#19](https://github.com/TigreGotico/speakeronnx/pull/19) ([JarbasAl](https://github.com/JarbasAl))
+
+## [0.0.5a3](https://github.com/TigreGotico/speakeronnx/tree/0.0.5a3) (2026-11-26)
+
+[Full Changelog](https://github.com/TigreGotico/speakeronnx/compare/0.0.5a2...0.0.5a3)
+
+**Merged pull requests:**
+
+- test: the docs model tables match MODEL\_REGISTRY [\#27](https://github.com/TigreGotico/speakeronnx/pull/27) ([openvoiceos-bot](https://github.com/openvoiceos-bot))
+
+## [0.0.5a2](https://github.com/TigreGotico/speakeronnx/tree/0.0.5a2) (2026-11-26)
+
+[Full Changelog](https://github.com/TigreGotico/speakeronnx/compare/0.0.5a1...0.0.5a2)
+
+**Merged pull requests:**
+
+- test: the test extra installs phoonnx\[espeak\] [\#28](https://github.com/TigreGotico/speakeronnx/pull/28) ([openvoiceos-bot](https://github.com/openvoiceos-bot))
+
+## [0.0.5a1](https://github.com/TigreGotico/speakeronnx/tree/0.0.5a1) (2026-11-12)
+
+[Full Changelog](https://github.com/TigreGotico/speakeronnx/compare/0.0.4a1...0.0.5a1)
+
+## [0.0.4a1](https://github.com/TigreGotico/speakeronnx/tree/0.0.4a1) (2026-11-12)
+
+[Full Changelog](https://github.com/TigreGotico/speakeronnx/compare/0.0.3a1...0.0.4a1)
+
+**Merged pull requests:**
+
+- fix: give each model its window, normalisation, threshold and revision, and reject silence in verify [\#24](https://github.com/TigreGotico/speakeronnx/pull/24) ([JarbasAl](https://github.com/JarbasAl))
+- fix: ship only the speakeronnx package, floor Python at 3.11, and make the quickstart runnable [\#23](https://github.com/TigreGotico/speakeronnx/pull/23) ([JarbasAl](https://github.com/JarbasAl))
+
+## [0.0.3a1](https://github.com/TigreGotico/speakeronnx/tree/0.0.3a1) (2026-10-23)
+
+[Full Changelog](https://github.com/TigreGotico/speakeronnx/compare/0.0.2a3...0.0.3a1)
+
+**Merged pull requests:**
+
+- fix: read IEEE float WAV files [\#21](https://github.com/TigreGotico/speakeronnx/pull/21) ([openvoiceos-bot](https://github.com/openvoiceos-bot))
+
+## [0.0.2a3](https://github.com/TigreGotico/speakeronnx/tree/0.0.2a3) (2026-09-17)
+
+[Full Changelog](https://github.com/TigreGotico/speakeronnx/compare/0.0.2a2...0.0.2a3)
+
+**Merged pull requests:**
+
+- test: hard-require phoonnx so the speaker-separation e2e runs in CI [\#17](https://github.com/TigreGotico/speakeronnx/pull/17) ([openvoiceos-bot](https://github.com/openvoiceos-bot))
+
+## [0.0.2a2](https://github.com/TigreGotico/speakeronnx/tree/0.0.2a2) (2026-08-10)
+
+[Full Changelog](https://github.com/TigreGotico/speakeronnx/compare/0.0.2a1...0.0.2a2)
+
+**Merged pull requests:**
+
+- chore: add Apache-2.0 LICENSE [\#15](https://github.com/TigreGotico/speakeronnx/pull/15) ([JarbasAl](https://github.com/JarbasAl))
+
+## [0.0.2a1](https://github.com/TigreGotico/speakeronnx/tree/0.0.2a1) (2026-07-30)
+
+[Full Changelog](https://github.com/TigreGotico/speakeronnx/compare/0.0.1...0.0.2a1)
+
+**Merged pull requests:**
+
+- docs: rewrite README in Simplified Technical English [\#13](https://github.com/TigreGotico/speakeronnx/pull/13) ([JarbasAl](https://github.com/JarbasAl))
 
 
 

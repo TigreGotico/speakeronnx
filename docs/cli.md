@@ -18,7 +18,6 @@ wespeaker-resnet34
   Embed dim: 256
   Samplerate: 16000 Hz
   WeSpeaker ResNet34 r-vector, large-margin ...
-
 campplus
   HF repo  : csukuangfj/speaker-embedding-models
   File     : wespeaker_en_voxceleb_CAM++_LM.onnx
@@ -62,7 +61,7 @@ Output:
 score=0.823456  threshold=0.450000  verdict=SAME
 ```
 
-Exit code: `0` for SAME, `1` for DIFFERENT. Useful in shell scripts.
+Exit code: `0` for SAME, `1` for DIFFERENT. Use this in shell scripts.
 
 ## Examples
 
@@ -73,7 +72,9 @@ for clip in ./test_clips/*.wav; do
         echo "MATCH: $clip"
     fi
 done
-
 # Extract embeddings for enrollment
 speakeronnx embed alice_enrollment.wav --model redimnet-b2 > alice_emb.json
 ```
+
+---
+[← API reference](api.md) · [Home](index.md) · [Feature frontend →](frontend.md)

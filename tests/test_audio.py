@@ -23,6 +23,20 @@ def _write_wav(path, samples, sample_width=2, framerate=16000, n_channels=1):
         wf.writeframes(samples)
 
 
+def _write_raw_wav(path, samples, format_tag, bits, framerate=16000, n_channels=1, extensible=False):
+    """Write a WAV file byte by byte, so the test does not depend on the reader under test."""
+    block_align = n_channels * bits // 8
+    if extensible:
+        guid_tail = b"\x00\x00\x00\x00\x10\x00\x80\x00\x00\xaa\x00\x38\x9b\x71"
+        fmt = struct.pack("<HHIIHHHHI", 0xFFFE, n_channels, framerate, framerate * block_align, block_align,
+                          bits, 22, bits, 0) + struct.pack("<H", format_tag) + guid_tail
+    else:
+        fmt = struct.pack("<HHIIHH", format_tag, n_channels, framerate, framerate * block_align, block_align, bits)
+    body = b"WAVE" + b"fmt " + struct.pack("<I", len(fmt)) + fmt + b"data" + struct.pack("<I", len(samples)) + samples
+    with open(path, "wb") as f:
+        f.write(b"RIFF" + struct.pack("<I", len(body)) + body)
+
+
 class TestLoadAudio(unittest.TestCase):
     def setUp(self):
         self.tmpdir = tempfile.mkdtemp()
@@ -80,12 +94,35 @@ class TestLoadAudio(unittest.TestCase):
     def test_32bit_float_wav(self):
         from speakeronnx.embedder import load_audio
         path = self._path("test32f.wav")
-        raw = struct.pack("<%df" % 400,
-                         *[0.5 * math.sin(2 * math.pi * 440 * t / 16000)
-                           for t in range(400)])
-        _write_wav(path, raw, sample_width=4, framerate=16000)
+        raw = struct.pack("<%df" % 400, *[0.5 * math.sin(2 * math.pi * 440 * t / 16000) for t in range(400)])
+        _write_raw_wav(path, raw, format_tag=3, bits=32)
         audio = load_audio(path, target_sr=16000)
         self.assertAlmostEqual(float(np.max(np.abs(audio))), 0.5, delta=0.01)
+
+    def test_64bit_float_wav(self):
+        from speakeronnx.embedder import load_audio
+        path = self._path("test64f.wav")
+        raw = struct.pack("<%dd" % 400, *[0.25 * math.sin(2 * math.pi * 440 * t / 16000) for t in range(400)])
+        _write_raw_wav(path, raw, format_tag=3, bits=64)
+        audio = load_audio(path, target_sr=16000)
+        self.assertAlmostEqual(float(np.max(np.abs(audio))), 0.25, delta=0.01)
+
+    def test_extensible_float_wav(self):
+        from speakeronnx.embedder import load_audio
+        path = self._path("test32f_ext.wav")
+        raw = struct.pack("<%df" % 400, *[0.5 * math.sin(2 * math.pi * 440 * t / 16000) for t in range(400)])
+        _write_raw_wav(path, raw, format_tag=3, bits=32, extensible=True)
+        audio = load_audio(path, target_sr=16000)
+        self.assertAlmostEqual(float(np.max(np.abs(audio))), 0.5, delta=0.01)
+
+    def test_quiet_32bit_int_wav_is_not_read_as_float(self):
+        # Small non-negative int32 samples are also finite float32 bit patterns; the format tag decides.
+        from speakeronnx.embedder import load_audio
+        path = self._path("test32i_quiet.wav")
+        raw = struct.pack("<%di" % 400, *[int(1_000_000 * abs(math.sin(2 * math.pi * 440 * t / 16000))) for t in range(400)])
+        _write_raw_wav(path, raw, format_tag=1, bits=32)
+        audio = load_audio(path, target_sr=16000)
+        self.assertAlmostEqual(float(np.max(np.abs(audio))), 1_000_000 / 2147483648.0, delta=1e-6)
 
     # --- Stereo downmix ---
 
@@ -155,6 +192,48 @@ class TestLoadAudio(unittest.TestCase):
             f.write(data)
         with self.assertRaises(ValueError):
             _load_wav(path)
+
+    # --- IEEE float and format tags ---
+
+    def test_float32_wav(self):
+        from speakeronnx.embedder import load_audio
+        path = self._path("f32.wav")
+        x = (0.5 * np.sin(2 * np.pi * 440 * np.arange(1600) / 16000)).astype("<f4")
+        _write_raw_wav(path, x.tobytes(), format_tag=3, bits=32)
+        np.testing.assert_allclose(load_audio(path, target_sr=16000), x, atol=1e-7)
+
+    def test_float64_wav(self):
+        from speakeronnx.embedder import load_audio
+        path = self._path("f64.wav")
+        x = 0.25 * np.cos(2 * np.pi * 220 * np.arange(1600) / 16000)
+        _write_raw_wav(path, x.astype("<f8").tobytes(), format_tag=3, bits=64)
+        np.testing.assert_allclose(load_audio(path, target_sr=16000), x.astype(np.float32), atol=1e-7)
+
+    def test_extensible_float32_wav(self):
+        from speakeronnx.embedder import load_audio
+        path = self._path("f32x.wav")
+        x = np.linspace(-0.9, 0.9, 1600, dtype="<f4")
+        _write_raw_wav(path, x.tobytes(), format_tag=3, bits=32, extensible=True)
+        np.testing.assert_allclose(load_audio(path, target_sr=16000), x, atol=1e-7)
+
+    def test_unknown_format_tag_raises(self):
+        from speakeronnx.embedder import _load_wav
+        path = self._path("alaw.wav")
+        _write_raw_wav(path, b"\x00" * 100, format_tag=6, bits=8)
+        with self.assertRaises(ValueError):
+            _load_wav(path)
+
+    def test_chunk_before_fmt_is_skipped(self):
+        from speakeronnx.embedder import load_audio
+        path = self._path("list.wav")
+        x = (np.arange(1600) % 100 - 50).astype("<i2")
+        _write_raw_wav(path, x.tobytes(), format_tag=1, bits=16)
+        raw = open(path, "rb").read()
+        extra = b"LIST" + struct.pack("<I", 5) + b"abcde\x00"
+        body = raw[8:12] + extra + raw[12:]
+        with open(path, "wb") as f:
+            f.write(b"RIFF" + struct.pack("<I", len(body)) + body)
+        np.testing.assert_allclose(load_audio(path, target_sr=16000), x.astype(np.float32) / 32768.0)
 
     def test_silence_returns_zeros(self):
         from speakeronnx.embedder import load_audio

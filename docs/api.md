@@ -12,7 +12,7 @@ from speakeronnx import SpeakerEmbedder, cosine, verify, MODEL_REGISTRY, ModelEn
 MODEL_REGISTRY: Dict[str, ModelEntry]
 ```
 
-A dict mapping alias strings to `ModelEntry` dataclass instances.
+A dict that maps alias strings to `ModelEntry` dataclass instances.
 All 9 built-in models are registered here.
 
 ### `ModelEntry`
@@ -34,6 +34,11 @@ class ModelEntry:
     output_index: int = 0
     extra_feeds: Optional[Dict[str, str]] = None
     description: str = ""
+    revision: Optional[str] = None  # Hugging Face commit
+    window: str = "hamming"         # "hamming", "hann" or "povey"
+    normalisation: Optional[str] = "cmn"  # "cmn", "per_feature" or None
+    threshold: float = 0.45
+    frontend_revision: int = 1
 ```
 
 | Field | Description |
@@ -52,6 +57,11 @@ class ModelEntry:
 | `output_index` | Which ONNX output is the embedding |
 | `extra_feeds` | Extra ONNX feeds (e.g. `{"length": "T"}` for TitaNet) |
 | `description` | Human-readable model summary |
+| `revision` | Hugging Face commit the download is pinned to |
+| `window` | Fbank analysis window of the training recipe |
+| `normalisation` | Fbank normalisation of the training recipe |
+| `threshold` | Default cosine threshold of `SpeakerEmbedder.verify()` |
+| `frontend_revision` | Revision of `window` and `normalisation`. An alias keeps its value; a corrected frontend gets a new alias |
 
 #### `ModelEntry.download()`
 
@@ -60,7 +70,7 @@ entry.download() -> str
 ```
 
 Downloads the ONNX file via `huggingface_hub` and returns the local path.
-The file is cached in the shared HF cache (`HF_HOME`).
+The library caches the file in the shared HF cache (`HF_HOME`).
 
 ---
 
@@ -79,9 +89,9 @@ The main class for extracting speaker embeddings.
 
 **Parameters:**
 
-- `model` — alias from `MODEL_REGISTRY` (e.g. `"wespeaker-resnet34"`) or
+- `model` - alias from `MODEL_REGISTRY` (e.g. `"wespeaker-resnet34"`) or
   absolute path to a custom `.onnx` file.
-- `providers` — ONNX Runtime execution providers (defaults to `["CPUExecutionProvider"]`).
+- `providers` - ONNX Runtime execution providers (defaults to `["CPUExecutionProvider"]`).
 
 **Properties:**
 
@@ -101,12 +111,12 @@ Extract a speaker embedding from audio.
 
 **Parameters:**
 
-- `source` — path to a WAV file, or a float32 numpy array at the
+- `source` - path to a WAV file, or a float32 numpy array at the
   model's expected sample rate.
 
 **Returns:**
 
-- L2-normalised 1-D float32 embedding vector.
+- L2-normalized 1-D float32 embedding vector.
 
 **Processing pipeline:**
 
@@ -115,7 +125,7 @@ Extract a speaker embedding from audio.
 3. Reshape/transpose input to match model's expected layout
 4. Add extra ONNX feeds (TitaNet length tensor)
 5. Run ONNX inference
-6. L2-normalise the output embedding
+6. L2-normalize the output embedding
 
 #### `cosine()`
 
@@ -132,11 +142,12 @@ def verify(
     self,
     a: np.ndarray,
     b: np.ndarray,
-    threshold: float = 0.45,
+    threshold: Optional[float] = None,
 ) -> Tuple[bool, float]
 ```
 
-Instance-method shortcut for `speakeronnx.verify(a, b, threshold)`.
+Instance-method shortcut for `speakeronnx.verify(a, b, threshold)`. When
+`threshold` is `None`, it takes `threshold` from the model entry.
 
 ---
 
@@ -169,12 +180,18 @@ Verify whether two embeddings belong to the same speaker.
 
 **Parameters:**
 
-- `a, b` — speaker embedding vectors.
-- `threshold` — cosine similarity threshold. Scores above this are
-  accepted as the same speaker. Default `0.45` is a reasonable starting
-  point; tune on your own data for the desired FAR/FRR trade-off.
+- `a, b` - speaker embedding vectors.
+- `threshold` - cosine similarity threshold. Scores above this are
+  accepted as the same speaker. The default `0.45` is a reasonable starting
+  point. Tune it on your own data for the false-accept / false-reject
+  trade-off you want.
 
 **Returns:**
 
-- `(is_same_speaker, score)` — `is_same_speaker` is `True` when
-  `score >= threshold`.
+- `(is_same_speaker, score)` - `is_same_speaker` is `True` when
+  `score >= threshold`. A zero vector on either side gives `(False, 0.0)`.
+  `embed()` returns the zero vector for digital silence, a clip whose peak
+  is below one 16-bit step, so two silent clips never verify.
+
+---
+[← Model guide](models.md) · [Home](index.md) · [CLI reference →](cli.md)
